@@ -1,0 +1,1543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>SPENDTrak</title>
+
+<!-- PWA Manifest -->
+<link rel="manifest" href="manifest.json">
+
+<!-- iOS PWA support -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SPENDTrak">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png">
+<link rel="apple-touch-icon" sizes="144x144" href="icons/icon-144.png">
+
+<!-- Android / Chrome -->
+<meta name="theme-color" content="#b22222">
+<meta name="mobile-web-app-capable" content="yes">
+
+<!-- General -->
+<meta name="description" content="SPENDTrak — fast, offline-ready personal expense tracker">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+<style>
+:root {
+  --primary: #b22222;
+  --primary-dark: #8b0000;
+  --blue: #003366;
+  --slate: #253844;
+  --surface: #F9F9F9;
+  --surface-container: #F2F2F2;
+  --border: #DADADA;
+  --text-primary: #1A1A1A;
+  --text-secondary: #6B7280;
+  --white: #FFFFFF;
+  --shadow: 0 2px 12px rgba(0,0,0,0.08);
+  --shadow-md: 0 4px 24px rgba(0,0,0,0.12);
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 24px;
+}
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+body {
+  font-family: 'Manrope', sans-serif;
+  background: #D0D0D0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+.phone {
+  width: 390px;
+  height: 844px;
+  background: var(--surface);
+  border-radius: 50px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 40px 100px rgba(0,0,0,0.3), inset 0 0 0 1px rgba(0,0,0,0.12), inset 0 0 0 3px rgba(255,255,255,0.08);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Status bar REMOVED */
+.status-bar { display: none; }
+.status-time { font-size: 15px; font-weight: 800; color: var(--text-primary); }
+.status-icons { display: flex; gap: 6px; align-items: center; color: var(--text-primary); }
+
+.app-content { flex: 1; overflow: hidden; position: relative; }
+
+/* Screens */
+.screen {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  display: none;
+  flex-direction: column;
+  background: var(--surface);
+  padding-bottom: 84px;
+}
+.screen.active { display: flex; }
+.screen::-webkit-scrollbar { display: none; }
+
+/* Header */
+.screen-header {
+  padding: 18px 20px 14px;
+  background: #b22222;
+  border-bottom: 1px solid rgba(255,255,255,0.15);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.screen-header-row { display: flex; align-items: center; justify-content: space-between; }
+.screen-title { font-size: 22px; font-weight: 800; color: #fff; letter-spacing: -0.02em; display: flex; align-items: center; gap: 6px; }
+.screen-subtitle { font-size: 12px; color: rgba(255,255,255,0.75); font-weight: 600; margin-top: 2px; }
+
+.icon-btn {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.18);
+  border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+  color: #fff;
+}
+.icon-btn svg { stroke: #fff; }
+.icon-btn:active { transform: scale(0.9); background: rgba(255,255,255,0.3); }
+
+/* ── HOME ── */
+.total-card {
+  margin: 12px 16px;
+  background: #003366;
+  border-radius: var(--r-xl);
+  padding: 14px 20px;
+  color: var(--white);
+  position: relative;
+  overflow: hidden;
+}
+.total-label {
+  font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  opacity: 0.7; margin-bottom: 4px;
+}
+.total-period { font-size: 12px; opacity: 0.6; font-weight: 500; }
+/* [D] Remove subtitle */
+.screen-subtitle { display: none !important; }
+
+/* [E] Amount right-aligned */
+.total-amount {
+  font-size: 32px; font-weight: 800;
+  letter-spacing: -0.03em; margin-bottom: 2px;
+  position: relative; z-index: 1;
+  text-align: right;
+}
+
+/* [B][F] Sticky zone wrapping card + pills + search */
+.home-sticky-zone {
+  position: sticky;
+  top: 60px;
+  z-index: 9;
+  background: var(--surface);
+}
+
+/* [B] Filter tabs centered + permanent */
+.filter-tabs {
+  display: flex; gap: 8px;
+  padding: 0 16px; margin-bottom: 14px;
+  justify-content: center;
+  flex-wrap: nowrap;
+  overflow: visible;
+}
+.filter-tab {
+  flex-shrink: 0;
+  flex-grow: 0;
+  min-width: 62px;
+  padding: 7px 16px;
+  border-radius: 20px;
+  font-size: 13px; font-weight: 700;
+  border: 1.5px solid var(--border);
+  background: var(--white);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'Manrope', sans-serif;
+  white-space: nowrap;
+}
+.filter-tab.active { background: var(--primary); border-color: var(--primary); color: var(--white); }
+
+/* [F] Search always visible */
+.search-container { padding: 0 16px; margin-bottom: 14px; }
+.search-wrap { position: relative; }
+.search-bar {
+  width: 100%; height: 44px;
+  background: var(--white);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 0 16px 0 44px;
+  font-family: 'Manrope', sans-serif;
+  font-size: 14px; font-weight: 500;
+  color: var(--text-primary);
+  outline: none; transition: border-color 0.2s;
+}
+.search-bar:focus { border-color: var(--primary); }
+.search-icon {
+  position: absolute; left: 14px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary); pointer-events: none;
+}
+
+.date-group {
+  padding: 6px 16px 4px;
+  font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--text-secondary);
+}
+.expense-list { padding: 0 16px; display: flex; flex-direction: column; gap: 8px; }
+
+.expense-item {
+  background: var(--white);
+  border-radius: var(--r-md);
+  padding: 13px 14px;
+  display: flex; align-items: center; gap: 12px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.expense-item:active { transform: scale(0.98); background: var(--surface-container); }
+
+.expense-cat-dot {
+  width: 42px; height: 42px;
+  border-radius: 13px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; font-size: 19px;
+}
+.expense-info { flex: 1; min-width: 0; }
+.expense-note {
+  font-size: 14px; font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.expense-meta { font-size: 11px; color: var(--text-secondary); font-weight: 600; margin-top: 3px; }
+.expense-amount { font-size: 15px; font-weight: 800; color: var(--primary); flex-shrink: 0; }
+
+.empty-state { text-align: center; padding: 52px 24px; color: var(--text-secondary); }
+.empty-icon { font-size: 44px; margin-bottom: 14px; }
+.empty-title { font-size: 16px; font-weight: 800; color: var(--text-primary); margin-bottom: 8px; }
+.empty-desc { font-size: 13px; font-weight: 500; line-height: 1.6; }
+
+/* ── ACCOUNTS / CATEGORIES ── */
+.list-section { padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+.list-item {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 13px 14px;
+  display: flex; align-items: center; gap: 12px;
+}
+.list-item-dot { width: 38px; height: 38px; border-radius: 11px; flex-shrink: 0; }
+.list-item-name { flex: 1; font-size: 15px; font-weight: 700; color: var(--text-primary); }
+.list-item-actions { display: flex; gap: 6px; }
+
+.action-btn {
+  width: 32px; height: 32px;
+  border-radius: 8px; border: none;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; transition: all 0.15s;
+}
+.action-btn:active { transform: scale(0.88); }
+.action-btn.edit { background: rgba(0,51,102,0.1); }
+.action-btn.del { background: rgba(178,34,34,0.1); }
+
+.add-new-btn {
+  margin: 0 16px;
+  width: calc(100% - 32px);
+  height: 48px;
+  border-radius: var(--r-md);
+  border: 2px dashed var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: 'Manrope', sans-serif;
+  font-size: 14px; font-weight: 700;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: all 0.2s;
+}
+.add-new-btn:active { border-color: var(--primary); color: var(--primary); background: rgba(178,34,34,0.04); }
+
+/* ── OVERVIEW ── */
+.overview-filter-tabs {
+  display: flex; gap: 8px;
+  padding: 14px 16px 0;
+}
+.overview-filter-tab {
+  flex: 1;
+  padding: 7px 4px;
+  border-radius: 20px;
+  font-size: 12px; font-weight: 700;
+  border: 1.5px solid var(--border);
+  background: var(--white);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'Manrope', sans-serif;
+  text-align: center;
+  white-space: nowrap;
+}
+.overview-filter-tab.active { background: var(--primary); border-color: var(--primary); color: var(--white); }
+.overview-card {
+  margin: 16px;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  padding: 24px;
+}
+.overview-card-title {
+  font-size: 11px; font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase; letter-spacing: 0.08em;
+  margin-bottom: 20px;
+}
+canvas#pieChart { display: block; margin: 0 auto; }
+.pie-legend { margin-top: 22px; display: flex; flex-direction: column; gap: 11px; }
+.legend-item { display: flex; align-items: center; gap: 10px; }
+.legend-dot { width: 12px; height: 12px; border-radius: 4px; flex-shrink: 0; }
+.legend-name { flex: 1; font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.legend-amount { font-size: 13px; font-weight: 800; color: var(--text-primary); }
+.legend-pct { font-size: 12px; font-weight: 600; color: var(--text-secondary); min-width: 40px; text-align: right; }
+
+/* ── BOTTOM NAV ── */
+.bottom-nav {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: 84px;
+  background: #b22222;
+  border-top: 1px solid rgba(255,255,255,0.15);
+  display: flex; align-items: center; justify-content: space-around;
+  padding: 0 0 16px;
+  z-index: 100;
+}
+.nav-item {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; gap: 4px;
+  padding: 8px 4px;
+  cursor: pointer; border: none; background: none;
+  transition: all 0.2s;
+  border-right: 2.5px solid rgba(255,255,255,0.55);
+}
+.nav-item:last-child { border-right: none; }
+.nav-icon { font-size: 22px; transition: transform 0.2s; }
+.nav-label {
+  font-size: 9px; font-weight: 800;
+  color: rgba(255,255,255,0.7);
+  letter-spacing: 0.06em; text-transform: uppercase;
+  font-family: 'Manrope', sans-serif;
+}
+.nav-item.active .nav-icon { transform: translateY(-2px); }
+.nav-item.active .nav-label { color: #fff; }
+
+/* FAB */
+.fab {
+  position: absolute; bottom: 92px; right: 20px;
+  width: 56px; height: 56px;
+  background: #003366;
+  border-radius: 18px; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 6px 20px rgba(0,51,102,0.45);
+  z-index: 101; transition: all 0.2s;
+}
+.fab:active { transform: scale(0.9); box-shadow: 0 3px 10px rgba(0,51,102,0.28); }
+
+/* ── OVERLAYS ── */
+.overlay {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.42);
+  z-index: 200; display: none;
+  align-items: flex-end;
+  backdrop-filter: blur(3px);
+}
+.overlay.show { display: flex; animation: fadeIn 0.2s ease; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.sheet {
+  width: 100%;
+  background: var(--white);
+  border-radius: 28px 28px 0 0;
+  padding: 0 20px 36px;
+  max-height: 88%;
+  overflow-y: auto;
+  animation: slideUp 0.3s cubic-bezier(0.32,0.72,0,1);
+}
+.sheet::-webkit-scrollbar { display: none; }
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+.sheet-handle {
+  width: 36px; height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin: 14px auto 20px;
+}
+.sheet-title { font-size: 19px; font-weight: 800; color: var(--text-primary); margin-bottom: 22px; letter-spacing: -0.01em; }
+
+/* Forms */
+.form-group { margin-bottom: 16px; }
+.form-label {
+  display: block;
+  font-size: 11px; font-weight: 800;
+  text-transform: uppercase; letter-spacing: 0.09em;
+  color: var(--text-secondary); margin-bottom: 8px;
+}
+.form-input {
+  width: 100%; height: 48px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 0 14px;
+  font-family: 'Manrope', sans-serif;
+  font-size: 15px; font-weight: 500;
+  color: var(--text-primary);
+  background: var(--white);
+  outline: none; transition: border-color 0.2s;
+  appearance: none; -webkit-appearance: none;
+}
+.form-input:focus { border-color: var(--primary); }
+
+.form-textarea {
+  width: 100%; min-height: 80px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 12px 14px;
+  font-family: 'Manrope', sans-serif;
+  font-size: 15px; font-weight: 500;
+  color: var(--text-primary);
+  background: var(--white);
+  outline: none; transition: border-color 0.2s;
+  resize: none;
+}
+.form-textarea:focus { border-color: var(--primary); }
+
+select.form-input {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 40px;
+}
+
+.amount-input-wrap { position: relative; }
+.currency-symbol {
+  position: absolute; left: 14px; top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px; font-weight: 800;
+  color: var(--text-secondary); pointer-events: none;
+}
+.amount-input-wrap .form-input { padding-left: 30px; }
+
+/* Color picker */
+.color-picker-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.color-swatch {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  border: 3px solid transparent;
+  cursor: pointer; transition: all 0.15s;
+}
+.color-swatch.selected { border-color: var(--text-primary); transform: scale(1.12); }
+
+/* Buttons */
+.btn-primary {
+  width: 100%; height: 52px;
+  background: var(--primary); color: var(--white);
+  border: none; border-radius: var(--r-md);
+  font-family: 'Manrope', sans-serif;
+  font-size: 15px; font-weight: 800;
+  cursor: pointer; transition: all 0.15s;
+  margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-primary:active { transform: scale(0.98); background: var(--primary-dark); }
+
+.btn-secondary {
+  width: 100%; height: 48px;
+  background: transparent; color: var(--text-secondary);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-md);
+  font-family: 'Manrope', sans-serif;
+  font-size: 15px; font-weight: 600;
+  cursor: pointer; margin-top: 8px; transition: all 0.15s;
+}
+.btn-secondary:active { background: var(--surface-container); }
+
+/* Action sheet */
+.action-sheet {
+  width: 100%;
+  background: var(--white);
+  border-radius: 28px 28px 0 0;
+  padding: 0 20px 36px;
+  animation: slideUp 0.3s cubic-bezier(0.32,0.72,0,1);
+}
+.action-sheet-item {
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer; transition: opacity 0.15s;
+}
+.action-sheet-item:last-child { border-bottom: none; }
+.action-sheet-item:active { opacity: 0.6; }
+.action-sheet-icon {
+  width: 42px; height: 42px;
+  border-radius: 13px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+}
+.action-sheet-label { font-size: 16px; font-weight: 700; color: var(--text-primary); }
+.action-sheet-label.danger { color: var(--primary); }
+
+/* Dialog */
+.dialog-overlay {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.52);
+  z-index: 300; display: none;
+  align-items: center; justify-content: center;
+  padding: 24px;
+  backdrop-filter: blur(4px);
+}
+.dialog-overlay.show { display: flex; animation: fadeIn 0.2s ease; }
+.dialog {
+  width: 100%; background: var(--white);
+  border-radius: 22px; padding: 26px;
+  animation: zoomIn 0.22s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes zoomIn { from { transform: scale(0.82); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.dialog-icon {
+  width: 56px; height: 56px;
+  border-radius: 16px;
+  background: rgba(255,36,0,0.1);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; margin: 0 auto 16px;
+}
+.dialog-title { font-size: 19px; font-weight: 800; color: var(--text-primary); text-align: center; margin-bottom: 8px; letter-spacing: -0.01em; }
+.dialog-desc { font-size: 14px; color: var(--text-secondary); text-align: center; line-height: 1.6; margin-bottom: 22px; font-weight: 500; }
+.dialog-actions { display: flex; gap: 10px; }
+.dialog-btn {
+  flex: 1; height: 48px;
+  border-radius: var(--r-md);
+  font-family: 'Manrope', sans-serif;
+  font-size: 15px; font-weight: 800;
+  cursor: pointer; border: none; transition: all 0.15s;
+}
+.dialog-btn:active { transform: scale(0.97); }
+.dialog-btn.cancel { background: var(--surface-container); color: var(--text-primary); }
+.dialog-btn.confirm { background: var(--primary); color: white; }
+
+/* Toast */
+.toast {
+  position: absolute; top: 64px; left: 50%;
+  transform: translateX(-50%) translateY(-16px);
+  background: var(--slate); color: white;
+  padding: 10px 22px;
+  border-radius: 24px;
+  font-size: 13px; font-weight: 700;
+  z-index: 500; opacity: 0;
+  transition: all 0.28s cubic-bezier(0.34,1.56,0.64,1);
+  white-space: nowrap; pointer-events: none;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── Install Banner (PWA) ── */
+.install-banner {
+  position: absolute;
+  bottom: 92px;
+  left: 12px; right: 12px;
+  background: #003366;
+  color: #fff;
+  border-radius: 16px;
+  padding: 14px 16px;
+  display: flex; align-items: center; gap: 12px;
+  z-index: 300;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.25);
+  transform: translateY(120%);
+  transition: transform 0.35s cubic-bezier(0.32,0.72,0,1);
+}
+.install-banner.show { transform: translateY(0); }
+.install-banner-icon { font-size: 28px; flex-shrink: 0; }
+.install-banner-text { flex: 1; }
+.install-banner-title { font-size: 13px; font-weight: 800; margin-bottom: 2px; }
+.install-banner-desc  { font-size: 11px; opacity: 0.75; font-weight: 500; }
+.install-banner-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.install-btn {
+  height: 34px; padding: 0 14px;
+  border-radius: 10px; border: none; cursor: pointer;
+  font-family: 'Manrope', sans-serif;
+  font-size: 12px; font-weight: 800;
+  transition: all 0.15s;
+}
+.install-btn.primary { background: #b22222; color: #fff; }
+.install-btn.ghost   { background: rgba(255,255,255,0.15); color: #fff; }
+.install-btn:active  { transform: scale(0.93); }
+
+/* Responsive: real device */
+@media (max-width: 480px) {
+  body { background: var(--surface); align-items: flex-start; }
+  .phone { width: 100%; height: 100dvh; border-radius: 0; }
+}
+</style>
+</head>
+<body>
+
+<div class="phone" id="app">
+
+  <!-- Status Bar -->
+  <div class="status-bar">
+    <span class="status-time" id="statusTime">9:41</span>
+    <div class="status-icons">
+      <!-- Signal -->
+      <svg width="17" height="12" viewBox="0 0 17 12" fill="currentColor">
+        <rect x="0" y="5" width="3" height="7" rx="1" opacity="0.4"/>
+        <rect x="4.5" y="3.5" width="3" height="8.5" rx="1" opacity="0.7"/>
+        <rect x="9" y="1.5" width="3" height="10.5" rx="1"/>
+        <rect x="13.5" y="0" width="3" height="12" rx="1"/>
+      </svg>
+      <!-- WiFi -->
+      <svg width="15" height="12" viewBox="0 0 15 12" fill="currentColor">
+        <path d="M7.5 9.5a1.5 1.5 0 100 3 1.5 1.5 0 000-3z"/>
+        <path d="M4.5 7.2C5.4 6.3 6.4 5.8 7.5 5.8c1.1 0 2.1.5 2.9 1.4l1.2-1.3C10.3 4.6 8.9 4 7.5 4S4.7 4.6 3.3 5.9l1.2 1.3z"/>
+        <path d="M2 4.7C3.3 3.3 5.3 2.4 7.5 2.4c2.2 0 4.2.9 5.5 2.3l1.3-1.4C12.5 1.6 10.2.5 7.5.5 4.8.5 2.5 1.6.7 3.3L2 4.7z" opacity="0.5"/>
+      </svg>
+      <!-- Battery -->
+      <svg width="25" height="12" viewBox="0 0 25 12" fill="none">
+        <rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="currentColor" stroke-opacity="0.35"/>
+        <rect x="2" y="2" width="16" height="8" rx="2" fill="currentColor"/>
+        <path d="M23 4v4c.9-.3 1.5-1.1 1.5-2s-.6-1.7-1.5-2z" fill="currentColor" fill-opacity="0.4"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- App Content -->
+  <div class="app-content">
+
+    <!-- ═══ HOME ═══ -->
+    <div class="screen active" id="screen-home">
+      <div class="screen-header">
+        <div class="screen-header-row">
+          <div>
+            <div class="screen-title"><span class="material-icons-round" style="font-size:26px;vertical-align:middle;color:#fff;">currency_rupee</span>SPENDTrak</div>
+            <div class="screen-subtitle" id="homeSubtitle">Your expenses at a glance</div>
+          </div>
+          <button class="icon-btn" onclick="openExport()" title="Export">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="home-sticky-zone">
+        <div class="total-card">
+          <div class="total-label">Total Spent</div>
+          <div class="total-amount" id="totalAmount">₹0.00</div>
+          <div class="total-period" id="totalPeriod">Past 7 days</div>
+        </div>
+
+        <div class="filter-tabs">
+          <button class="filter-tab active" onclick="setFilter('week',this)">Week</button>
+          <button class="filter-tab" onclick="setFilter('month',this)">Month</button>
+          <button class="filter-tab" onclick="setFilter('year',this)">Year</button>
+          <button class="filter-tab" onclick="setFilter('all',this)">All Time</button>
+        </div>
+
+        <div class="search-container">
+          <div class="search-wrap">
+            <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input type="text" class="search-bar" id="searchInput" placeholder="Search expenses…" oninput="renderHome()">
+          </div>
+        </div>
+      </div>
+
+      <div id="expenseListContainer"></div>
+    </div>
+
+    <!-- ═══ ACCOUNTS ═══ -->
+    <div class="screen" id="screen-accounts">
+      <div class="screen-header">
+        <div class="screen-header-row">
+          <div>
+            <div class="screen-title">Accounts</div>
+            <div class="screen-subtitle">Manage payment methods</div>
+          </div>
+        </div>
+      </div>
+      <div class="list-section" id="accountsList"></div>
+      <button class="add-new-btn" onclick="openAddAccount()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add Account
+      </button>
+    </div>
+
+    <!-- ═══ CATEGORIES ═══ -->
+    <div class="screen" id="screen-categories">
+      <div class="screen-header">
+        <div class="screen-header-row">
+          <div>
+            <div class="screen-title">Categories</div>
+            <div class="screen-subtitle">Organise your spending</div>
+          </div>
+        </div>
+      </div>
+      <div class="list-section" id="categoriesList"></div>
+      <button class="add-new-btn" onclick="openAddCategory()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add Category
+      </button>
+    </div>
+
+    <!-- ═══ OVERVIEW ═══ -->
+    <div class="screen" id="screen-overview">
+      <div class="screen-header">
+        <div class="screen-header-row">
+          <div>
+            <div class="screen-title">Overview</div>
+            <div class="screen-subtitle" id="overviewSubtitle">Spending breakdown</div>
+          </div>
+        </div>
+      </div>
+      <div class="overview-filter-tabs">
+        <button class="overview-filter-tab active" onclick="setOverviewFilter('week',this)">Week</button>
+        <button class="overview-filter-tab" onclick="setOverviewFilter('month',this)">Month</button>
+        <button class="overview-filter-tab" onclick="setOverviewFilter('year',this)">Year</button>
+        <button class="overview-filter-tab" onclick="setOverviewFilter('all',this)">All Time</button>
+      </div>
+      <div class="overview-card">
+        <div class="overview-card-title">By Category</div>
+        <canvas id="pieChart" width="240" height="240"></canvas>
+        <div class="pie-legend" id="pieLegend"></div>
+      </div>
+    </div>
+
+  </div><!-- /app-content -->
+
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" onclick="switchScreen('home',this)">
+      <div class="nav-icon">🏠</div>
+      <span class="nav-label">Home</span>
+    </button>
+    <button class="nav-item" onclick="switchScreen('accounts',this)">
+      <div class="nav-icon">💳</div>
+      <span class="nav-label">Accounts</span>
+    </button>
+    <button class="nav-item" onclick="switchScreen('categories',this)">
+      <div class="nav-icon">🏷️</div>
+      <span class="nav-label">Categories</span>
+    </button>
+    <button class="nav-item" onclick="switchScreen('overview',this)">
+      <div class="nav-icon">📊</div>
+      <span class="nav-label">Overview</span>
+    </button>
+  </nav>
+
+  <!-- FAB -->
+  <button class="fab" onclick="openAddExpense()">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round">
+      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+  </button>
+
+  <!-- ══════════ OVERLAYS ══════════ -->
+
+  <!-- Add/Edit Expense -->
+  <div class="overlay" id="expenseOverlay" onclick="bgClose(event,'expenseOverlay')">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title" id="expenseSheetTitle">Add Expense</div>
+
+      <div class="form-group">
+        <label class="form-label">Amount (₹)</label>
+        <div class="amount-input-wrap">
+          <span class="currency-symbol">₹</span>
+          <input type="number" class="form-input" id="expenseAmount" placeholder="0.00" min="0" step="0.01">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Date</label>
+        <input type="date" class="form-input" id="expenseDate">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Time</label>
+        <input type="time" class="form-input" id="expenseTime">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Account</label>
+        <select class="form-input" id="expenseAccount"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Category</label>
+        <select class="form-input" id="expenseCategory"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Note</label>
+        <textarea class="form-textarea" id="expenseNote" placeholder="What was this for?"></textarea>
+      </div>
+
+      <button class="btn-primary" id="expenseSubmitBtn" onclick="submitExpense()">Add Expense</button>
+      <button class="btn-secondary" onclick="close_('expenseOverlay')">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Expense Action Sheet -->
+  <div class="overlay" id="expenseActionOverlay" onclick="bgClose(event,'expenseActionOverlay')">
+    <div class="action-sheet">
+      <div class="sheet-handle"></div>
+      <div class="action-sheet-item" onclick="openEditExpense()">
+        <div class="action-sheet-icon" style="background:rgba(0,51,102,0.1)">✏️</div>
+        <span class="action-sheet-label">Edit Expense</span>
+      </div>
+      <div class="action-sheet-item" onclick="confirmDelExpense()">
+        <div class="action-sheet-icon" style="background:rgba(255,36,0,0.1)">🗑️</div>
+        <span class="action-sheet-label danger">Delete Expense</span>
+      </div>
+      <div class="action-sheet-item" onclick="close_('expenseActionOverlay')">
+        <div class="action-sheet-icon" style="background:var(--surface-container)">✕</div>
+        <span class="action-sheet-label">Cancel</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Account Sheet -->
+  <div class="overlay" id="accountOverlay" onclick="bgClose(event,'accountOverlay')">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title" id="accountSheetTitle">Add Account</div>
+      <div class="form-group">
+        <label class="form-label">Name</label>
+        <input type="text" class="form-input" id="accountName" placeholder="e.g. HDFC Card">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Colour</label>
+        <div class="color-picker-row" id="accountColorPicker"></div>
+      </div>
+      <button class="btn-primary" id="accountSubmitBtn" onclick="submitAccount()">Add Account</button>
+      <button class="btn-secondary" onclick="close_('accountOverlay')">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Category Sheet -->
+  <div class="overlay" id="categoryOverlay" onclick="bgClose(event,'categoryOverlay')">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title" id="categorySheetTitle">Add Category</div>
+      <div class="form-group">
+        <label class="form-label">Name</label>
+        <input type="text" class="form-input" id="categoryName" placeholder="e.g. Groceries">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Colour</label>
+        <div class="color-picker-row" id="categoryColorPicker"></div>
+      </div>
+      <button class="btn-primary" id="categorySubmitBtn" onclick="submitCategory()">Add Category</button>
+      <button class="btn-secondary" onclick="close_('categoryOverlay')">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Export Sheet -->
+  <div class="overlay" id="exportOverlay" onclick="bgClose(event,'exportOverlay')">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">Export Data</div>
+      <p style="font-size:14px;color:var(--text-secondary);font-weight:500;margin-bottom:22px;line-height:1.6">
+        Download all your expenses as a CSV file — open directly in Excel or Google Sheets.
+      </p>
+      <button class="btn-primary" onclick="exportCSV()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Export as CSV
+      </button>
+      <button class="btn-secondary" onclick="close_('exportOverlay')">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Delete Expense Dialog -->
+  <div class="dialog-overlay" id="delExpenseDialog">
+    <div class="dialog">
+      <div class="dialog-icon">🗑️</div>
+      <div class="dialog-title">Delete Expense?</div>
+      <div class="dialog-desc">This can't be undone. The expense will be permanently removed.</div>
+      <div class="dialog-actions">
+        <button class="dialog-btn cancel" onclick="closeDialog('delExpenseDialog')">Cancel</button>
+        <button class="dialog-btn confirm" onclick="deleteExpense()">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Account Dialog -->
+  <div class="dialog-overlay" id="delAccountDialog">
+    <div class="dialog">
+      <div class="dialog-icon">💳</div>
+      <div class="dialog-title">Delete Account?</div>
+      <div class="dialog-desc">Expenses linked to this account will become unlinked. This can't be undone.</div>
+      <div class="dialog-actions">
+        <button class="dialog-btn cancel" onclick="closeDialog('delAccountDialog')">Cancel</button>
+        <button class="dialog-btn confirm" onclick="deleteAccount()">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Category Dialog -->
+  <div class="dialog-overlay" id="delCategoryDialog">
+    <div class="dialog">
+      <div class="dialog-icon">🏷️</div>
+      <div class="dialog-title">Delete Category?</div>
+      <div class="dialog-desc">Expenses in this category will become uncategorised. This can't be undone.</div>
+      <div class="dialog-actions">
+        <button class="dialog-btn cancel" onclick="closeDialog('delCategoryDialog')">Cancel</button>
+        <button class="dialog-btn confirm" onclick="deleteCategory()">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <!-- PWA Install Banner -->
+  <div class="install-banner" id="installBanner">
+    <div class="install-banner-icon">📲</div>
+    <div class="install-banner-text">
+      <div class="install-banner-title">Install SPENDTrak</div>
+      <div class="install-banner-desc">Add to home screen for offline access</div>
+    </div>
+    <div class="install-banner-actions">
+      <button class="install-btn primary" onclick="triggerInstall()">Install</button>
+      <button class="install-btn ghost"   onclick="dismissInstallBanner()">✕</button>
+    </div>
+  </div>
+
+</div><!-- /phone -->
+
+<script>
+// ══════════════════════════════════════════
+//  DATA & STATE
+// ══════════════════════════════════════════
+const PALETTE = [
+  '#FF2400','#FF6B35','#FFB347','#F59E0B','#84CC16',
+  '#22C55E','#14B8A6','#06B6D4','#3B82F6','#6366F1',
+  '#8B5CF6','#A855F7','#EC4899','#F43F5E','#64748B',
+  '#003366','#253844','#78716C','#0EA5E9','#10B981'
+];
+
+const CAT_EMOJI = {
+  'Bill':'💡','Food':'🍔','Entertainment':'🎬','Health':'❤️‍🩹',
+  'Shopping':'🛍️','Travel':'✈️','Education':'📚','Transport':'🚌',
+  'Rent':'🏠','Subscriptions':'📱'
+};
+
+let S = {
+  expenses: [],
+  accounts: [],
+  categories: [],
+  filter: 'week',
+  editExpId: null,
+  editAccId: null,
+  editCatId: null,
+  accColor: PALETTE[15],
+  catColor: PALETTE[2]
+};
+
+function load() {
+  try {
+    const d = JSON.parse(localStorage.getItem('spendlite_v2') || 'null');
+    if (d) { S.expenses = d.expenses||[]; S.accounts = d.accounts||[]; S.categories = d.categories||[]; }
+    else seed();
+  } catch { seed(); }
+}
+
+function seed() {
+  S.accounts = [
+    { id: uid(), name: 'Card',    color: '#3B82F6' },
+    { id: uid(), name: 'Cash',    color: '#22C55E' },
+    { id: uid(), name: 'Savings', color: '#F59E0B' }
+  ];
+  S.categories = [
+    { id: uid(), name: 'Bill',          color: '#FF2400' },
+    { id: uid(), name: 'Food',          color: '#FF6B35' },
+    { id: uid(), name: 'Entertainment', color: '#8B5CF6' },
+    { id: uid(), name: 'Health',        color: '#EC4899' },
+    { id: uid(), name: 'Shopping',      color: '#3B82F6' }
+  ];
+  save();
+}
+
+function save() {
+  localStorage.setItem('spendlite_v2', JSON.stringify({ expenses: S.expenses, accounts: S.accounts, categories: S.categories }));
+}
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+// ══════════════════════════════════════════
+//  FILTERS
+// ══════════════════════════════════════════
+function filtered() {
+  const q = (document.getElementById('searchInput')?.value || '').toLowerCase();
+  const now = new Date();
+  return S.expenses
+    .filter(e => {
+      const d = new Date(e.date + 'T00:00:00');
+      if (S.filter === 'week') {
+        const w = new Date(now); w.setDate(now.getDate() - 7);
+        if (d < w) return false;
+      } else if (S.filter === 'month') {
+        if (d.getMonth() !== now.getMonth() || d.getFullYear() !== now.getFullYear()) return false;
+      } else if (S.filter === 'year') {
+        if (d.getFullYear() !== now.getFullYear()) return false;
+      }
+      if (!q) return true;
+      const cat = S.categories.find(c => c.id === e.categoryId);
+      const acc = S.accounts.find(a => a.id === e.accountId);
+      return (e.note || '').toLowerCase().includes(q) ||
+             (cat?.name || '').toLowerCase().includes(q) ||
+             (acc?.name || '').toLowerCase().includes(q);
+    })
+    .sort((a, b) => new Date(b.date+'T'+b.time) - new Date(a.date+'T'+a.time));
+}
+
+function setFilter(f, btn) {
+  S.filter = f;
+  document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  renderHome();
+}
+
+// ══════════════════════════════════════════
+//  RENDER HOME
+// ══════════════════════════════════════════
+function renderHome() {
+  const list = filtered();
+  const total = list.reduce((s, e) => s + parseFloat(e.amount || 0), 0);
+  const labels = { week:'Past 7 days', month:'This month', year:'This year', all:'All time' };
+
+  document.getElementById('totalAmount').textContent = '₹' + fmt(total);
+  document.getElementById('totalPeriod').textContent = labels[S.filter];
+  document.getElementById('homeSubtitle').textContent = list.length + ' expense' + (list.length!==1?'s':'');
+
+  const container = document.getElementById('expenseListContainer');
+  if (!list.length) {
+    container.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">💸</div>
+      <div class="empty-title">No expenses found</div>
+      <div class="empty-desc">Tap <strong>+</strong> to record your first expense.</div>
+    </div>`;
+    return;
+  }
+
+  // Group by date
+  const groups = {};
+  list.forEach(e => { (groups[e.date] = groups[e.date]||[]).push(e); });
+
+  let html = '';
+  Object.entries(groups).forEach(([date, items]) => {
+    html += `<div class="date-group">${dateLabel(date)}</div><div class="expense-list">`;
+    items.forEach(e => {
+      const cat = S.categories.find(c => c.id === e.categoryId);
+      const acc = S.accounts.find(a => a.id === e.accountId);
+      const emoji = CAT_EMOJI[cat?.name] || '📦';
+      const clr = cat?.color || '#607D8B';
+      html += `<div class="expense-item" onclick="openExpenseAction('${e.id}')">
+        <div class="expense-cat-dot" style="background:${clr}22"><span>${emoji}</span></div>
+        <div class="expense-info">
+          <div class="expense-note">${escH(e.note || cat?.name || 'Expense')}</div>
+          <div class="expense-meta">${escH(cat?.name||'—')} · ${escH(acc?.name||'—')} · ${e.time}</div>
+        </div>
+        <div class="expense-amount">₹${fmt(e.amount)}</div>
+      </div>`;
+    });
+    html += '</div>';
+  });
+  container.innerHTML = html;
+}
+
+function dateLabel(dateStr) {
+  const d  = new Date(dateStr + 'T00:00:00');
+  const t  = new Date(); t.setHours(0,0,0,0);
+  const y  = new Date(t); y.setDate(t.getDate()-1);
+  if (d.getTime()===t.getTime()) return 'Today';
+  if (d.getTime()===y.getTime()) return 'Yesterday';
+  return d.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+}
+
+function fmt(n) {
+  return parseFloat(n||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+function escH(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ══════════════════════════════════════════
+//  EXPENSE CRUD
+// ══════════════════════════════════════════
+function openAddExpense() {
+  S.editExpId = null;
+  document.getElementById('expenseSheetTitle').textContent = 'Add Expense';
+  document.getElementById('expenseSubmitBtn').textContent  = 'Add Expense';
+  document.getElementById('expenseAmount').value = '';
+  document.getElementById('expenseNote').value   = '';
+  const now = new Date();
+  document.getElementById('expenseDate').value = now.toISOString().split('T')[0];
+  document.getElementById('expenseTime').value = now.toTimeString().slice(0,5);
+  populateSel(null, null);
+  open_('expenseOverlay');
+}
+
+function openEditExpense() {
+  close_('expenseActionOverlay');
+  const e = S.expenses.find(x => x.id === S.editExpId);
+  if (!e) return;
+  document.getElementById('expenseSheetTitle').textContent = 'Edit Expense';
+  document.getElementById('expenseSubmitBtn').textContent  = 'Save Changes';
+  document.getElementById('expenseAmount').value = e.amount;
+  document.getElementById('expenseDate').value   = e.date;
+  document.getElementById('expenseTime').value   = e.time;
+  document.getElementById('expenseNote').value   = e.note||'';
+  populateSel(e.accountId, e.categoryId);
+  open_('expenseOverlay');
+}
+
+function populateSel(accId, catId) {
+  document.getElementById('expenseAccount').innerHTML =
+    S.accounts.map(a=>`<option value="${a.id}"${a.id===accId?' selected':''}>${escH(a.name)}</option>`).join('');
+  document.getElementById('expenseCategory').innerHTML =
+    S.categories.map(c=>`<option value="${c.id}"${c.id===catId?' selected':''}>${escH(c.name)}</option>`).join('');
+}
+
+function submitExpense() {
+  const amount     = document.getElementById('expenseAmount').value;
+  const date       = document.getElementById('expenseDate').value;
+  const time       = document.getElementById('expenseTime').value;
+  const accountId  = document.getElementById('expenseAccount').value;
+  const categoryId = document.getElementById('expenseCategory').value;
+  const note       = document.getElementById('expenseNote').value.trim();
+
+  if (!amount || parseFloat(amount) <= 0) { toast('Enter a valid amount'); return; }
+  if (!date)   { toast('Select a date'); return; }
+  if (!accountId)  { toast('Select an account'); return; }
+  if (!categoryId) { toast('Select a category'); return; }
+
+  if (S.editExpId) {
+    const i = S.expenses.findIndex(x => x.id === S.editExpId);
+    if (i !== -1) S.expenses[i] = { ...S.expenses[i], amount, date, time, accountId, categoryId, note };
+    toast('Expense updated ✓');
+  } else {
+    S.expenses.push({ id: uid(), amount, date, time, accountId, categoryId, note });
+    toast('Expense added ✓');
+  }
+  save(); close_('expenseOverlay'); renderHome(); renderOverview();
+}
+
+function openExpenseAction(id) {
+  S.editExpId = id;
+  open_('expenseActionOverlay');
+}
+
+function confirmDelExpense() {
+  close_('expenseActionOverlay');
+  openDialog('delExpenseDialog');
+}
+
+function deleteExpense() {
+  S.expenses = S.expenses.filter(e => e.id !== S.editExpId);
+  save(); closeDialog('delExpenseDialog'); renderHome(); renderOverview();
+  toast('Expense deleted');
+}
+
+// ══════════════════════════════════════════
+//  ACCOUNTS CRUD
+// ══════════════════════════════════════════
+function renderAccounts() {
+  const el = document.getElementById('accountsList');
+  if (!S.accounts.length) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">💳</div><div class="empty-title">No accounts yet</div><div class="empty-desc">Add an account to track where you spend from.</div></div>`;
+    return;
+  }
+  el.innerHTML = S.accounts.map(a => `
+    <div class="list-item">
+      <div class="list-item-dot" style="background:${a.color}"></div>
+      <span class="list-item-name">${escH(a.name)}</span>
+      <div class="list-item-actions">
+        <button class="action-btn edit" onclick="openEditAccount('${a.id}')">✏️</button>
+        <button class="action-btn del"  onclick="openDelAccount('${a.id}')">🗑️</button>
+      </div>
+    </div>`).join('');
+}
+
+function openAddAccount() {
+  S.editAccId = null; S.accColor = PALETTE[15];
+  document.getElementById('accountSheetTitle').textContent = 'Add Account';
+  document.getElementById('accountSubmitBtn').textContent  = 'Add Account';
+  document.getElementById('accountName').value = '';
+  colorPicker('accountColorPicker', S.accColor, 'acc');
+  open_('accountOverlay');
+}
+
+function openEditAccount(id) {
+  const a = S.accounts.find(x => x.id===id); if (!a) return;
+  S.editAccId = id; S.accColor = a.color;
+  document.getElementById('accountSheetTitle').textContent = 'Edit Account';
+  document.getElementById('accountSubmitBtn').textContent  = 'Save Changes';
+  document.getElementById('accountName').value = a.name;
+  colorPicker('accountColorPicker', a.color, 'acc');
+  open_('accountOverlay');
+}
+
+function submitAccount() {
+  const name = document.getElementById('accountName').value.trim();
+  if (!name) { toast('Enter an account name'); return; }
+  if (S.editAccId) {
+    const i = S.accounts.findIndex(x => x.id===S.editAccId);
+    if (i!==-1) S.accounts[i] = { ...S.accounts[i], name, color: S.accColor };
+    toast('Account updated ✓');
+  } else {
+    S.accounts.push({ id: uid(), name, color: S.accColor });
+    toast('Account added ✓');
+  }
+  save(); close_('accountOverlay'); renderAccounts();
+}
+
+function openDelAccount(id) { S.editAccId = id; openDialog('delAccountDialog'); }
+
+function deleteAccount() {
+  S.accounts = S.accounts.filter(a => a.id !== S.editAccId);
+  save(); closeDialog('delAccountDialog'); renderAccounts();
+  toast('Account deleted');
+}
+
+// ══════════════════════════════════════════
+//  CATEGORIES CRUD
+// ══════════════════════════════════════════
+function renderCategories() {
+  const el = document.getElementById('categoriesList');
+  if (!S.categories.length) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">🏷️</div><div class="empty-title">No categories yet</div><div class="empty-desc">Add a category to organise your expenses.</div></div>`;
+    return;
+  }
+  el.innerHTML = S.categories.map(c => {
+    const em = CAT_EMOJI[c.name] || '📦';
+    return `<div class="list-item">
+      <div class="list-item-dot" style="background:${c.color};display:flex;align-items:center;justify-content:center;font-size:17px;border-radius:11px">${em}</div>
+      <span class="list-item-name">${escH(c.name)}</span>
+      <div class="list-item-actions">
+        <button class="action-btn edit" onclick="openEditCategory('${c.id}')">✏️</button>
+        <button class="action-btn del"  onclick="openDelCategory('${c.id}')">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openAddCategory() {
+  S.editCatId = null; S.catColor = PALETTE[2];
+  document.getElementById('categorySheetTitle').textContent = 'Add Category';
+  document.getElementById('categorySubmitBtn').textContent  = 'Add Category';
+  document.getElementById('categoryName').value = '';
+  colorPicker('categoryColorPicker', S.catColor, 'cat');
+  open_('categoryOverlay');
+}
+
+function openEditCategory(id) {
+  const c = S.categories.find(x => x.id===id); if (!c) return;
+  S.editCatId = id; S.catColor = c.color;
+  document.getElementById('categorySheetTitle').textContent = 'Edit Category';
+  document.getElementById('categorySubmitBtn').textContent  = 'Save Changes';
+  document.getElementById('categoryName').value = c.name;
+  colorPicker('categoryColorPicker', c.color, 'cat');
+  open_('categoryOverlay');
+}
+
+function submitCategory() {
+  const name = document.getElementById('categoryName').value.trim();
+  if (!name) { toast('Enter a category name'); return; }
+  if (S.editCatId) {
+    const i = S.categories.findIndex(x => x.id===S.editCatId);
+    if (i!==-1) S.categories[i] = { ...S.categories[i], name, color: S.catColor };
+    toast('Category updated ✓');
+  } else {
+    S.categories.push({ id: uid(), name, color: S.catColor });
+    toast('Category added ✓');
+  }
+  save(); close_('categoryOverlay'); renderCategories();
+}
+
+function openDelCategory(id) { S.editCatId = id; openDialog('delCategoryDialog'); }
+
+function deleteCategory() {
+  S.categories = S.categories.filter(c => c.id !== S.editCatId);
+  save(); closeDialog('delCategoryDialog'); renderCategories();
+  toast('Category deleted');
+}
+
+// ══════════════════════════════════════════
+//  COLOUR PICKER
+// ══════════════════════════════════════════
+function colorPicker(containerId, sel, type) {
+  document.getElementById(containerId).innerHTML = PALETTE.map(c =>
+    `<div class="color-swatch${c===sel?' selected':''}" style="background:${c}"
+          onclick="pickColor('${c}','${type}','${containerId}')"></div>`
+  ).join('');
+}
+
+function pickColor(c, type, containerId) {
+  if (type==='acc') S.accColor=c; else S.catColor=c;
+  colorPicker(containerId, c, type);
+}
+
+// ══════════════════════════════════════════
+//  PIE CHART (OVERVIEW)
+// ══════════════════════════════════════════
+let overviewFilter = 'week';
+
+function setOverviewFilter(f, btn) {
+  overviewFilter = f;
+  document.querySelectorAll('.overview-filter-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  const labels = { week:'Past 7 days', month:'This month', year:'This year', all:'All time' };
+  document.getElementById('overviewSubtitle').textContent = labels[f] + ' breakdown';
+  renderOverview();
+}
+
+function filteredForOverview() {
+  const now = new Date();
+  return S.expenses.filter(e => {
+    if (overviewFilter === 'all') return true;
+    const d = new Date(e.date + 'T00:00:00');
+    if (overviewFilter === 'week') { const w = new Date(now); w.setDate(now.getDate()-6); w.setHours(0,0,0,0); return d >= w; }
+    if (overviewFilter === 'month') return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear();
+    if (overviewFilter === 'year') return d.getFullYear()===now.getFullYear();
+    return true;
+  });
+}
+
+function renderOverview() {
+  const canvas = document.getElementById('pieChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = 240, H = 240, cx = W/2, cy = H/2, R = 96, r = 52;
+
+  // Tally filtered by category
+  const totals = {};
+  filteredForOverview().forEach(e => {
+    totals[e.categoryId] = (totals[e.categoryId]||0) + parseFloat(e.amount||0);
+  });
+  const grand = Object.values(totals).reduce((a,b)=>a+b, 0);
+
+  ctx.clearRect(0,0,W,H);
+
+  const periodLabels = { week:'7 days', month:'month', year:'year', all:'all time' };
+
+  if (!grand) {
+    ctx.fillStyle='#DADADA';
+    ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#FFFFFF';
+    ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill();
+    document.getElementById('pieLegend').innerHTML =
+      `<div class="empty-state" style="padding:12px 0 0"><div class="empty-title" style="font-size:14px">No data yet</div><div class="empty-desc">Add expenses to see your breakdown.</div></div>`;
+    return;
+  }
+
+  // Build slices: group <5% as "Other"
+  let slices = [], other = 0;
+  Object.entries(totals).forEach(([id, amt]) => {
+    if (amt/grand < 0.05) { other += amt; return; }
+    const cat = S.categories.find(c=>c.id===id);
+    slices.push({ name: cat?.name||'Uncategorised', color: cat?.color||'#9E9E9E', amt });
+  });
+  if (other > 0) slices.push({ name:'Other', color:'#94A3B8', amt: other });
+  slices.sort((a,b)=>b.amt-a.amt);
+
+  // Draw donut
+  let angle = -Math.PI/2;
+  slices.forEach(s => {
+    const sweep = (s.amt/grand)*Math.PI*2;
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,R,angle,angle+sweep);
+    ctx.closePath();
+    ctx.fillStyle = s.color;
+    ctx.fill();
+    angle += sweep;
+  });
+
+  // Gap lines
+  angle = -Math.PI/2;
+  slices.forEach(s => {
+    const sweep = (s.amt/grand)*Math.PI*2;
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.lineTo(cx+R*Math.cos(angle), cy+R*Math.sin(angle));
+    ctx.strokeStyle='#F9F9F9'; ctx.lineWidth=2;
+    ctx.stroke();
+    angle += sweep;
+  });
+
+  // Donut hole
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fillStyle='#FFFFFF'; ctx.fill();
+
+  // Center label
+  ctx.fillStyle='#1A1A1A';
+  ctx.font='800 15px Manrope,sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('₹'+fmt(grand), cx, cy-9);
+  ctx.font='600 11px Manrope,sans-serif';
+  ctx.fillStyle='#6B7280';
+  ctx.fillText(periodLabels[overviewFilter], cx, cy+10);
+
+  // Legend
+  document.getElementById('pieLegend').innerHTML = slices.map(s => `
+    <div class="legend-item">
+      <div class="legend-dot" style="background:${s.color}"></div>
+      <span class="legend-name">${escH(s.name)}</span>
+      <span class="legend-amount">₹${fmt(s.amt)}</span>
+      <span class="legend-pct">${((s.amt/grand)*100).toFixed(1)}%</span>
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════════
+//  EXPORT
+// ══════════════════════════════════════════
+function openExport() { open_('exportOverlay'); }
+
+function exportCSV() {
+  const rows = [['Date','Time','Amount (₹)','Account','Category','Note']];
+  S.expenses
+    .slice().sort((a,b)=>new Date(b.date)-new Date(a.date))
+    .forEach(e => {
+      const acc = S.accounts.find(a=>a.id===e.accountId);
+      const cat = S.categories.find(c=>c.id===e.categoryId);
+      rows.push([e.date, e.time, parseFloat(e.amount).toFixed(2), acc?.name||'', cat?.name||'', (e.note||'').replace(/,/g,';')]);
+    });
+  const csv  = rows.map(r=>r.join(',')).join('\n');
+  const blob = new Blob(['\uFEFF'+csv], { type:'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = 'spendlite_' + new Date().toISOString().split('T')[0] + '.csv';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+  close_('exportOverlay'); toast('CSV exported ✓');
+}
+
+// ══════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════
+function switchScreen(name, btn) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  btn.classList.add('active');
+  if (name==='accounts')   renderAccounts();
+  if (name==='categories') renderCategories();
+  if (name==='overview')   renderOverview();
+}
+
+// ══════════════════════════════════════════
+//  OVERLAY HELPERS
+// ══════════════════════════════════════════
+function open_(id)  { document.getElementById(id).classList.add('show'); }
+function close_(id) { document.getElementById(id).classList.remove('show'); }
+function bgClose(ev, id) { if (ev.target===document.getElementById(id)) close_(id); }
+function openDialog(id)  { document.getElementById(id).classList.add('show'); }
+function closeDialog(id) { document.getElementById(id).classList.remove('show'); }
+
+// ══════════════════════════════════════════
+//  TOAST
+// ══════════════════════════════════════════
+let _toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(()=>el.classList.remove('show'), 2200);
+}
+
+// ══════════════════════════════════════════
+//  STATUS BAR TIME
+// ══════════════════════════════════════════
+function tick() {
+  const n = new Date();
+  document.getElementById('statusTime').textContent =
+    n.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:false});
+}
+
+// ══════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════
+load(); renderHome();
+</script>
+
+<script>
+// ── Service Worker Registration ────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => {
+        console.log('[SPENDTrak] SW registered. Scope:', reg.scope);
+
+        // Notify user when a new version is available
+        reg.addEventListener('updatefound', () => {
+          const nw = reg.installing;
+          nw.addEventListener('statechange', () => {
+            if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+              toast('Update available — refresh to apply ↻');
+            }
+          });
+        });
+      })
+      .catch(err => console.warn('[SPENDTrak] SW registration failed:', err));
+  });
+}
+
+// ── Install prompt (Add to Home Screen) ───
+let _deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  _deferredPrompt = e;
+  // Show an install banner after a short delay
+  setTimeout(() => {
+    if (_deferredPrompt) showInstallBanner();
+  }, 3000);
+});
+
+function showInstallBanner() {
+  const banner = document.getElementById('installBanner');
+  if (banner) banner.classList.add('show');
+}
+
+function triggerInstall() {
+  if (!_deferredPrompt) return;
+  _deferredPrompt.prompt();
+  _deferredPrompt.userChoice.then(choice => {
+    if (choice.outcome === 'accepted') toast('SPENDTrak installed ✓');
+    _deferredPrompt = null;
+    const banner = document.getElementById('installBanner');
+    if (banner) banner.classList.remove('show');
+  });
+}
+
+function dismissInstallBanner() {
+  const banner = document.getElementById('installBanner');
+  if (banner) banner.classList.remove('show');
+  _deferredPrompt = null;
+}
+
+window.addEventListener('appinstalled', () => {
+  toast('SPENDTrak installed ✓');
+  _deferredPrompt = null;
+});
+</script>
+</body>
+</html>
