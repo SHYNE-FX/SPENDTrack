@@ -6,8 +6,8 @@
 <title>SPENDTrak</title>
 <link rel="icon" href="logoRUPEES.png" type="image/png">
 
-<!-- VERSION 2.13 -->
-  
+<!-- VERSION 2.23 -->
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -590,6 +590,13 @@ select.form-input {
 .cat-dropdown-check { margin-left: auto; font-size: 12px; color: var(--primary); }
 
 /* [G] Calendar screen */
+.cal-month-total {
+  font-size: 18px;
+  font-weight: 800;
+  color: #003366;
+  letter-spacing: -0.5px;
+  line-height: 1;
+}
 .cal-nav {
   display: flex; align-items: center; justify-content: space-between;
   padding: 14px 16px 8px;
@@ -979,6 +986,7 @@ select.form-input {
     <div class="screen" id="screen-calendar">
       <div class="screen-subbar">
         <span class="screen-subbar-title">📅 Calendar</span>
+        <span id="calMonthTotal" class="cal-month-total">₹0</span>
       </div>
       <div class="cal-nav">
         <button class="cal-arrow" onclick="calShift(-1)">‹</button>
@@ -2067,12 +2075,15 @@ function renderCalendar() {
 
   // Build daily totals map for this month
   const dailyTotals = {};
+  let monthTotal = 0;
   S.expenses.forEach(e => {
     const d = new Date(e.date + 'T00:00:00');
     if (d.getFullYear() === calYear && d.getMonth() === calMonth) {
       dailyTotals[d.getDate()] = (dailyTotals[d.getDate()]||0) + parseFloat(e.amount||0);
+      monthTotal += parseFloat(e.amount||0);
     }
   });
+  document.getElementById('calMonthTotal').textContent = '₹' + fmt(monthTotal);
 
   const firstDay = new Date(calYear, calMonth, 1).getDay(); // 0=Sun
   const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
