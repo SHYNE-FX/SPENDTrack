@@ -6,7 +6,7 @@
 <title>SPENDTrak</title>
 <link rel="icon" href="logoRUPEES.png" type="image/png">
 
-<!-- VERSION 2.25 -->
+<!-- VERSION 2.26 -->
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -663,6 +663,14 @@ select.form-input {
 .cal-detail-note { flex: 1; font-size: 12px; font-weight: 600; color: var(--text-primary); }
 .cal-detail-amt { font-size: 12px; font-weight: 700; color: var(--primary); }
 .cal-empty-day { padding: 14px; text-align: center; font-size: 12px; color: var(--text-secondary); font-weight: 600; }
+.cal-detail-item { cursor: pointer; transition: background 0.15s; }
+.cal-detail-item:active { background: var(--surface-container); }
+.cal-detail-item .cal-detail-arrow { font-size: 10px; color: var(--text-secondary); opacity: 0.6; margin-left: 4px; flex-shrink: 0; }
+@keyframes expense-highlight {
+  0%   { background: rgba(178,34,34,0.18); transform: scale(1.015); }
+  100% { background: var(--white);         transform: scale(1); }
+}
+.expense-item.highlighted { animation: expense-highlight 1.4s ease-out forwards; }
 @media (max-width: 480px) {
   body { background: var(--surface); align-items: flex-start; }
   .phone { width: 100%; height: 100dvh; border-radius: 0; }
@@ -1055,21 +1063,25 @@ select.form-input {
           <input type="number" class="form-input" id="expenseAmount" placeholder="0.00" min="0" step="0.01">
         </div>
       </div>
-      <div class="form-group">
-        <label class="form-label">Date</label>
-        <input type="date" class="form-input" id="expenseDate">
+      <div style="display:flex;gap:10px;">
+        <div class="form-group" style="flex:1;min-width:0;">
+          <label class="form-label">Date</label>
+          <input type="date" class="form-input" id="expenseDate" style="padding:0 8px;font-size:13px;">
+        </div>
+        <div class="form-group" style="flex:1;min-width:0;">
+          <label class="form-label">Time</label>
+          <input type="time" class="form-input" id="expenseTime" style="padding:0 8px;font-size:13px;">
+        </div>
       </div>
-      <div class="form-group">
-        <label class="form-label">Time</label>
-        <input type="time" class="form-input" id="expenseTime">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Account</label>
-        <select class="form-input" id="expenseAccount"></select>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Category</label>
-        <select class="form-input" id="expenseCategory"></select>
+      <div style="display:flex;gap:10px;">
+        <div class="form-group" style="flex:1;min-width:0;">
+          <label class="form-label">Account</label>
+          <select class="form-input" id="expenseAccount" style="font-size:13px;padding:0 28px 0 8px;"></select>
+        </div>
+        <div class="form-group" style="flex:1;min-width:0;">
+          <label class="form-label">Category</label>
+          <select class="form-input" id="expenseCategory" style="font-size:13px;padding:0 28px 0 8px;"></select>
+        </div>
       </div>
       <div class="form-group">
         <label class="form-label">Note</label>
@@ -2160,15 +2172,43 @@ function renderCalDetail() {
   let rows = dayExpenses.map(e => {
     const cat = S.categories.find(c=>c.id===e.categoryId);
     const clr = cat?.color||'#607D8B';
-    return `<div class="cal-detail-item">
+    return `<div class="cal-detail-item" onclick="navigateToExpense('${e.id}')">
       <div class="cal-detail-dot" style="background:${clr}"></div>
       <div class="cal-detail-note">${escH(e.note||cat?.name||'Expense')}</div>
       <div class="cal-detail-amt">₹${fmt(e.amount)}</div>
+      <div class="cal-detail-arrow">›</div>
     </div>`;
   }).join('');
 
   el.style.display='block';
   el.innerHTML = `<div class="cal-detail-header"><span>${label}</span><span class="cal-detail-header-total">₹${fmt(dayTotal)}</span></div><div class="cal-detail-list">${rows}</div>`;
+}
+
+// ══════════════════════════════════════════
+//  CALENDAR → HOME NAVIGATION  [A]
+// ══════════════════════════════════════════
+function navigateToExpense(id) {
+  // Switch to home, set filter to All so expense is always visible
+  S.filter = 'all';
+  S.catFilter = 'all';
+  document.querySelectorAll('.filter-tab').forEach(t => {
+    t.classList.toggle('active', t.textContent.trim() === 'All Time');
+  });
+  switchScreen('home', document.querySelector('.nav-item'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelector('.nav-item').classList.add('active');
+  renderHome();
+
+  // Scroll to + highlight after render
+  requestAnimationFrame(() => {
+    const el = document.querySelector(`.expense-item[data-id="${id}"]`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    requestAnimationFrame(() => {
+      el.classList.add('highlighted');
+      el.addEventListener('animationend', () => el.classList.remove('highlighted'), { once: true });
+    });
+  });
 }
 
 // ══════════════════════════════════════════
