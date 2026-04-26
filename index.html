@@ -6,7 +6,7 @@
 <title>SPENDTrak</title>
 <link rel="icon" href="logoRUPEES.png" type="image/png">
 
-<!-- VERSION 2.23 -->
+<!-- VERSION 2.25 -->
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -220,6 +220,7 @@ body {
 }
 .expense-meta { font-size: 11px; color: var(--text-secondary); font-weight: 600; margin-top: 3px; }
 .expense-amount { font-size: 15px; font-weight: 800; color: var(--primary); flex-shrink: 0; }
+.expense-pct { font-size: 12px; font-weight: 700; color: var(--text-secondary); text-align: right; margin-top: 2px; }
 
 .empty-state { text-align: center; padding: 52px 24px; color: var(--text-secondary); }
 .empty-icon { font-size: 44px; margin-bottom: 14px; }
@@ -1664,6 +1665,7 @@ function renderExpenseItems() {
       const clr   = cat?.color || '#607D8B';
       const isSel = S.selectedIds.has(e.id);
       const chk   = S.selectMode ? `<div class="sel-checkbox">${isSel?'✓':''}</div>` : '';
+      const pct   = dayTotal > 0 ? ((parseFloat(e.amount||0) / dayTotal) * 100).toFixed(1) : '0.0';
       html += `<div class="expense-item${isSel?' sel-selected':''}" data-id="${e.id}"
         onpointerdown="startLongPress('${e.id}', event)"
         onpointerup="cancelLongPress()"
@@ -1676,7 +1678,10 @@ function renderExpenseItems() {
           <div class="expense-note">${escH(e.note || cat?.name || 'Expense')}</div>
           <div class="expense-meta">${escH(cat?.name||'—')} · ${escH(acc?.name||'—')} · ${e.time}</div>
         </div>
-        <div class="expense-amount">₹${fmt(e.amount)}</div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;flex-shrink:0;">
+          <div class="expense-amount">₹${fmt(e.amount)}</div>
+          <div class="expense-pct">${pct}%</div>
+        </div>
       </div>`;
     });
     html += '</div>';
