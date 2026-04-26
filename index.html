@@ -6,7 +6,7 @@
 <title>SPENDTrak</title>
 <link rel="icon" href="logoRUPEES.png" type="image/png">
 
-<!-- VERSION 2.26 -->
+<!-- VERSION 2.27 -->
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1088,8 +1088,10 @@ select.form-input {
         <textarea class="form-textarea" id="expenseNote" placeholder="What was this for?"></textarea>
       </div>
 
-      <button class="btn-primary" id="expenseSubmitBtn" onclick="submitExpense()">Add Expense</button>
-      <button class="btn-secondary" onclick="close_('expenseOverlay')">Cancel</button>
+      <div style="display:flex;gap:10px;">
+        <button class="btn-secondary" style="flex:1;" onclick="close_('expenseOverlay')">Cancel</button>
+        <button class="btn-primary" style="flex:1;" id="expenseSubmitBtn" onclick="submitExpense()">Add Expense</button>
+      </div>
     </div>
   </div>
 
