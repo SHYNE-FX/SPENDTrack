@@ -6,7 +6,7 @@
 <title>SPENDTrak</title>
 <link rel="icon" href="logoRUPEES.png" type="image/png">
 
-<!-- VERSION 2.32 -->
+<!-- VERSION 2.4 -->
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -899,8 +899,7 @@ select.form-input {
         <div class="gh-date" id="headerDate"></div>
         <div class="gh-day"  id="headerDay"></div>
       </div>
-      <!-- [C] Analytics button where Export was -->
-      <button class="gh-analytics-btn" id="analyticsHeaderBtn" onclick="goToAnalytics()" title="Analytics">📊</button>
+      <!-- analytics btn removed -->
     </div>
   </div>
 
@@ -919,7 +918,7 @@ select.form-input {
   </style>
 
     <!-- ═══ HOME ═══ -->
-    <div class="screen active" id="screen-home">
+    <div class="screen" id="screen-home">
 
       <div class="home-sticky-zone">
         <div class="total-card">
@@ -981,7 +980,7 @@ select.form-input {
     </div>
 
     <!-- ═══ OVERVIEW ═══ -->
-    <div class="screen" id="screen-analytics">
+    <div class="screen active" id="screen-analytics">
       <div class="screen-subbar">
         <span class="screen-subbar-title">📊 Analytics</span>
         <!-- [B] XPort button — Analytics tab only -->
@@ -1025,29 +1024,33 @@ select.form-input {
 
   <!-- Bottom Nav -->
   <nav class="bottom-nav">
-    <button class="nav-item active" onclick="goHome(this)">
+    <button class="nav-item active" onclick="switchScreen('analytics',this)">
       <div class="nav-icon">🏠</div>
       <span class="nav-label">Home</span>
+    </button>
+    <button class="nav-item" onclick="goHome(this)">
+      <div class="nav-icon">📑</div>
+      <span class="nav-label">Records</span>
     </button>
     <button class="nav-item" onclick="switchScreen('accounts',this)">
       <div class="nav-icon">💳</div>
       <span class="nav-label">Accounts</span>
     </button>
-    <!-- [D] Add Expense — centered -->
-    <button class="nav-item nav-add" onclick="openAddExpense()">
-      <div class="nav-icon">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round">
-          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-        </svg>
-      </div>
-    </button>
-    <button class="nav-item" style="border-left: 2.5px solid rgba(255,255,255,0.55);" onclick="switchScreen('calendar',this)">
+    <button class="nav-item" onclick="switchScreen('calendar',this)">
       <div class="nav-icon">📅</div>
       <span class="nav-label">Calendar</span>
     </button>
     <button class="nav-item" onclick="switchScreen('categories',this)">
       <div class="nav-icon">🏷️</div>
       <span class="nav-label">Categories</span>
+    </button>
+    <!-- Add Expense — extreme right -->
+    <button class="nav-item nav-add" onclick="openAddExpense()">
+      <div class="nav-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+      </div>
     </button>
   </nav>
 
@@ -2051,7 +2054,7 @@ function goHome(btn) {
 
 const GH_LABELS = { home:'Home', accounts:'Accounts', categories:'Categories', analytics:'Analytics', calendar:'Calendar' };
 const SCREEN_ORDER = ['home','accounts','categories','analytics','calendar'];
-let _currentScreen = 'home';
+let _currentScreen = 'analytics';
 let _screenAnimating = false;
 
 function switchScreen(name, btn) {
@@ -2253,7 +2256,7 @@ function navigateToExpense(id) {
 // ══════════════════════════════════════════
 //  INIT
 // ══════════════════════════════════════════
-load(); renderHome(); renderHeaderDate(); updateGHLabel('Home');
+load(); renderOverview(); renderHeaderDate(); updateGHLabel('Analytics');
 </script>
 </body>
 </html>
