@@ -6,7 +6,7 @@
 <title>SPENDTrak</title>
 <link rel="icon" href="logoRUPEES.png" type="image/png">
 
-<!-- VERSION 2.31 -->
+<!-- VERSION 2.32 -->
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1317,11 +1317,8 @@ function updateGHLabel(name) {
 
 // [C] Navigate to Analytics from global header button
 function goToAnalytics() {
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.getElementById('screen-analytics').classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  updateGHLabel('Analytics');
-  renderOverview();
+  const analyticsNavBtn = document.querySelectorAll('.nav-item')[3] || null;
+  switchScreen('analytics', analyticsNavBtn);
 }
 
 // ══════════════════════════════════════════
@@ -1910,7 +1907,6 @@ function goToCatFromAnalytics(catId) {
   });
   const homeBtn = document.querySelector('button.nav-item');
   switchScreen('home', homeBtn);
-  renderHome();
 }
 
 function renderOverview() {
