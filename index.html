@@ -6,7 +6,7 @@
 <title>SPENDTrak</title>
 <link rel="icon" href="logoRUPEES.png" type="image/png">
 
-<!-- VERSION 2.3 -->
+<!-- VERSION 2.31 -->
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -74,6 +74,17 @@ body {
 }
 .screen.active { display: flex; }
 .screen::-webkit-scrollbar { display: none; }
+
+/* ── SLIDE ANIMATIONS ── */
+@keyframes slideInFromRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
+@keyframes slideInFromLeft  { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+@keyframes slideOutToLeft   { from { transform: translateX(0); } to { transform: translateX(-100%); } }
+@keyframes slideOutToRight  { from { transform: translateX(0); } to { transform: translateX(100%); } }
+
+.screen.slide-in-right  { display: flex; animation: slideInFromRight 0.32s cubic-bezier(0.25,0.46,0.45,0.94) forwards; }
+.screen.slide-in-left   { display: flex; animation: slideInFromLeft  0.32s cubic-bezier(0.25,0.46,0.45,0.94) forwards; }
+.screen.slide-out-left  { display: flex; animation: slideOutToLeft   0.32s cubic-bezier(0.25,0.46,0.45,0.94) forwards; }
+.screen.slide-out-right { display: flex; animation: slideOutToRight  0.32s cubic-bezier(0.25,0.46,0.45,0.94) forwards; }
 
 /* Header */
 .screen-header {
@@ -2040,21 +2051,51 @@ function goHome(btn) {
   S.catFilter = 'all';
   closeCatDropdown();
   switchScreen('home', btn);
-  renderHome();
 }
 
 const GH_LABELS = { home:'Home', accounts:'Accounts', categories:'Categories', analytics:'Analytics', calendar:'Calendar' };
+const SCREEN_ORDER = ['home','accounts','categories','analytics','calendar'];
+let _currentScreen = 'home';
+let _screenAnimating = false;
 
 function switchScreen(name, btn) {
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.getElementById('screen-'+name).classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  if (name === _currentScreen) return;
+  if (_screenAnimating) return;
+
+  const fromIdx = SCREEN_ORDER.indexOf(_currentScreen);
+  const toIdx   = SCREEN_ORDER.indexOf(name);
+  const goRight = toIdx > fromIdx;
+
+  const outEl = document.getElementById('screen-' + _currentScreen);
+  const inEl  = document.getElementById('screen-' + name);
+
+  // Update nav immediately
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   if (btn) btn.classList.add('active');
   updateGHLabel(GH_LABELS[name] || name);
+
+  // Trigger renders before animation so content is ready
   if (name==='accounts')   renderAccounts();
   if (name==='categories') renderCategories();
-  if (name==='analytics')   renderOverview();
+  if (name==='analytics')  renderOverview();
   if (name==='calendar')   renderCalendar();
+  if (name==='home')       renderHome();
+
+  _screenAnimating = true;
+
+  outEl.classList.remove('active');
+  outEl.classList.add(goRight ? 'slide-out-left' : 'slide-out-right');
+  inEl.classList.add(goRight ? 'slide-in-right' : 'slide-in-left');
+
+  const ANIM_MS = 320;
+  setTimeout(() => {
+    document.querySelectorAll('.screen').forEach(s => {
+      s.classList.remove('slide-in-right','slide-in-left','slide-out-left','slide-out-right','active');
+    });
+    inEl.classList.add('active');
+    _currentScreen = name;
+    _screenAnimating = false;
+  }, ANIM_MS);
 }
 
 // ══════════════════════════════════════════
@@ -2195,19 +2236,14 @@ function renderCalDetail() {
 //  CALENDAR → HOME NAVIGATION  [A]
 // ══════════════════════════════════════════
 function navigateToExpense(id) {
-  // Switch to home, set filter to All so expense is always visible
   S.filter = 'all';
   S.catFilter = 'all';
   document.querySelectorAll('.filter-tab').forEach(t => {
     t.classList.toggle('active', t.textContent.trim() === 'All Time');
   });
   switchScreen('home', document.querySelector('.nav-item'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.querySelector('.nav-item').classList.add('active');
-  renderHome();
-
-  // Scroll to + highlight after render
-  requestAnimationFrame(() => {
+  // Scroll + highlight after animation completes (320ms)
+  setTimeout(() => {
     const el = document.querySelector(`.expense-item[data-id="${id}"]`);
     if (!el) return;
     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -2215,7 +2251,7 @@ function navigateToExpense(id) {
       el.classList.add('highlighted');
       el.addEventListener('animationend', () => el.classList.remove('highlighted'), { once: true });
     });
-  });
+  }, 340);
 }
 
 // ══════════════════════════════════════════
