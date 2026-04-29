@@ -747,6 +747,20 @@ select.form-input {
 /* home-sticky-zone: now top:0 (global header is outside app-content) */
 .home-sticky-zone { top: 0; }
 
+/* ── HOME SCROLL FIX ── */
+/* home screen itself does NOT scroll — only the area below the sticky zone does */
+#screen-home { overflow: hidden !important; padding-bottom: 0; }
+.home-sticky-zone { position: relative; flex-shrink: 0; }
+.home-scroll-area {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  padding-bottom: 84px;
+  min-height: 0;
+}
+.home-scroll-area::-webkit-scrollbar { display: none; }
+
 /* Sub-screen title bars for non-home screens */
 .screen-subbar {
   padding: 14px 16px 10px;
@@ -952,7 +966,9 @@ select.form-input {
         </div>
       </div>
 
-      <div id="expenseListContainer"></div>
+      <div class="home-scroll-area">
+        <div id="expenseListContainer"></div>
+      </div>
     </div>
 
     <!-- ═══ ACCOUNTS ═══ -->
@@ -2245,7 +2261,13 @@ function navigateToExpense(id) {
   setTimeout(() => {
     const el = document.querySelector(`.expense-item[data-id="${id}"]`);
     if (!el) return;
-    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const scrollArea = document.querySelector('.home-scroll-area');
+    if (scrollArea) {
+      const elTop = el.getBoundingClientRect().top - scrollArea.getBoundingClientRect().top + scrollArea.scrollTop;
+      scrollArea.scrollTo({ top: elTop - scrollArea.clientHeight / 2 + el.clientHeight / 2, behavior: 'smooth' });
+    } else {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
     requestAnimationFrame(() => {
       el.classList.add('highlighted');
       el.addEventListener('animationend', () => el.classList.remove('highlighted'), { once: true });
