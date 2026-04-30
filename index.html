@@ -731,6 +731,7 @@ select.form-input {
   font-size: 13px; font-weight: 700; color: var(--text-secondary);
   text-transform: uppercase; letter-spacing: 0.08em;
 }
+.analytics-actions { display: flex; align-items: center; gap: 8px; }
 .xport-btn {
   display: flex; align-items: center; gap: 5px;
   height: 32px; padding: 0 12px;
@@ -740,6 +741,15 @@ select.form-input {
   letter-spacing: 0.04em; transition: all 0.15s;
 }
 .xport-btn:active { transform: scale(0.93); background: #1a2c38; }
+.share-btn {
+  display: flex; align-items: center; gap: 5px;
+  height: 32px; padding: 0 12px;
+  background: #003366; border: none; border-radius: 8px;
+  color: #fff; font-size: 11px; font-weight: 800;
+  cursor: pointer; font-family: 'Comfortaa', sans-serif;
+  letter-spacing: 0.04em; transition: all 0.15s;
+}
+.share-btn:active { transform: scale(0.93); background: #002244; }
 
 /* Screens: remove top padding (no per-screen header) */
 .screen { padding-top: 0; }
@@ -999,14 +1009,23 @@ select.form-input {
     <div class="screen active" id="screen-analytics">
       <div class="screen-subbar">
         <span class="screen-subbar-title">📊 Analytics</span>
-        <!-- [B] XPort button — Analytics tab only -->
-        <button class="xport-btn" onclick="openExport()" title="Export Data">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-            <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-          </svg>
-          XPort
-        </button>
+        <div class="analytics-actions">
+          <button class="share-btn" onclick="shareCSV()" title="Share CSV">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+              <line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/>
+            </svg>
+            Share
+          </button>
+          <!-- [B] XPort button — Analytics tab only -->
+          <button class="xport-btn" onclick="openExport()" title="Export Data">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            XPort
+          </button>
+        </div>
       </div>
       <div class="overview-filter-tabs">
         <button class="overview-filter-tab" onclick="setOverviewFilter('week',this)">Week</button>
@@ -2038,24 +2057,56 @@ function renderOverview() {
 // ══════════════════════════════════════════
 function openExport() { open_('exportOverlay'); }
 
-function exportCSV() {
+function buildExportData() {
   const rows = [['Date','Time','Amount (₹)','Account','Category','Note']];
   S.expenses
-    .slice().sort((a,b)=>new Date(b.date)-new Date(a.date))
+    .slice().sort((a,b)=>new Date(a.date+'T'+(a.time||'00:00'))-new Date(b.date+'T'+(b.time||'00:00')))
     .forEach(e => {
       const acc = S.accounts.find(a=>a.id===e.accountId);
       const cat = S.categories.find(c=>c.id===e.categoryId);
       rows.push([e.date, e.time, parseFloat(e.amount).toFixed(2), acc?.name||'', cat?.name||'', (e.note||'').replace(/,/g,';')]);
     });
-  const csv  = rows.map(r=>r.join(',')).join('\n');
+  const csv = rows.map(r=>r.join(',')).join('\n');
   const blob = new Blob(['\uFEFF'+csv], { type:'text/csv;charset=utf-8;' });
+  const filename = 'spendlite_' + new Date().toISOString().split('T')[0] + '.csv';
+  return { blob, filename };
+}
+
+function downloadCSVBlob(blob, filename) {
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
   a.href = url;
-  a.download = 'spendlite_' + new Date().toISOString().split('T')[0] + '.csv';
+  a.download = filename;
   document.body.appendChild(a); a.click();
   document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+function exportCSV() {
+  const { blob, filename } = buildExportData();
+  downloadCSVBlob(blob, filename);
   close_('exportOverlay'); toast('CSV exported ✓');
+}
+
+async function shareCSV() {
+  const { blob, filename } = buildExportData();
+  const file = new File([blob], filename, { type: 'text/csv;charset=utf-8;' });
+  try {
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({
+        title: 'SPENDTrak CSV Export',
+        text: 'Sharing my SPENDTrak transactions CSV.',
+        files: [file]
+      });
+      toast('CSV shared ✓');
+      return;
+    }
+    downloadCSVBlob(blob, filename);
+    toast('Share not supported, CSV downloaded');
+  } catch (err) {
+    if (err && err.name === 'AbortError') return;
+    downloadCSVBlob(blob, filename);
+    toast('Share failed, CSV downloaded');
+  }
 }
 
 // ══════════════════════════════════════════
