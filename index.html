@@ -6,7 +6,7 @@
 <title>SPENDTrak</title>
 <link rel="icon" href="logoRUPEES.png" type="image/png">
 
-<!-- VERSION 2.5 -->
+<!-- VERSION 2.5.1 -->
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -941,8 +941,8 @@ select.form-input {
           <div class="total-period" id="totalPeriod">Past 7 days</div>
 
           <div class="filter-tabs">
-            <button class="filter-tab active" onclick="setFilter('week',this)">Week</button>
-            <button class="filter-tab" onclick="setFilter('month',this)">Month</button>
+            <button class="filter-tab" onclick="setFilter('week',this)">Week</button>
+            <button class="filter-tab active" onclick="setFilter('month',this)">Month</button>
             <button class="filter-tab" onclick="setFilter('year',this)">Year</button>
             <button class="filter-tab" onclick="setFilter('all',this)">All Time</button>
           </div>
@@ -1009,8 +1009,8 @@ select.form-input {
         </button>
       </div>
       <div class="overview-filter-tabs">
-        <button class="overview-filter-tab active" onclick="setOverviewFilter('week',this)">Week</button>
-        <button class="overview-filter-tab" onclick="setOverviewFilter('month',this)">Month</button>
+        <button class="overview-filter-tab" onclick="setOverviewFilter('week',this)">Week</button>
+        <button class="overview-filter-tab active" onclick="setOverviewFilter('month',this)">Month</button>
         <button class="overview-filter-tab" onclick="setOverviewFilter('year',this)">Year</button>
         <button class="overview-filter-tab" onclick="setOverviewFilter('all',this)">All Time</button>
       </div>
@@ -1278,7 +1278,7 @@ let S = {
   expenses: [],
   accounts: [],
   categories: [],
-  filter: 'week',
+  filter: 'month',
   catFilter: 'all',
   editExpId: null,
   editAccId: null,
@@ -1893,7 +1893,7 @@ function pickColor(c, type, containerId) {
 // ══════════════════════════════════════════
 //  PIE CHART (OVERVIEW)
 // ══════════════════════════════════════════
-let overviewFilter = 'week';
+let overviewFilter = 'month';
 let _pieSlices = []; // [C] store slices for canvas hit-test
 
 function setOverviewFilter(f, btn) {
