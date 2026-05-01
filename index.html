@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>SPENDTrak V 2.6</title>
+<title>SPENDTrak </title>
 <link rel="icon" href="logoRUPEES.png" type="image/png">
 
-<!-- VERSION 2.5.1 -->
+<!-- VERSION 2.6.3 -->
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -171,6 +171,39 @@ body {
   white-space: nowrap;
 }
 .filter-tab.active { background: var(--primary); border-color: var(--primary); color: var(--white); }
+
+.date-range-wrap {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+  margin: 12px 0;
+}
+.date-pill {
+  height: 34px;
+  border-radius: 18px;
+  border: 1.5px solid var(--border);
+  background: var(--white);
+  color: var(--text-secondary);
+  padding: 0 12px;
+  font-family: 'Comfortaa', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.date-pill label { white-space: nowrap; }
+.date-pill input[type="date"] {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: 'Comfortaa', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+  width: 100px;
+}
 
 /* [F] Search always visible */
 .search-container { padding: 0 16px; margin-bottom: 14px; }
@@ -561,6 +594,29 @@ select.form-input {
   display: flex; justify-content: center;
   padding: 0 0 4px; position: relative;
 }
+.cat-filter-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.clear-date-btn {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 16px;
+  border: 1.5px solid var(--border);
+  background: var(--white);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: 'Comfortaa', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  transition: all 0.15s;
+}
+.clear-date-btn:active {
+  transform: scale(0.95);
+  background: var(--surface-container);
+}
 .cat-trigger-pill {
   height: 32px; padding: 0 18px;
   border-radius: 16px;
@@ -750,6 +806,15 @@ select.form-input {
   letter-spacing: 0.04em; transition: all 0.15s;
 }
 .share-btn:active { transform: scale(0.93); background: #002244; }
+.upload-btn {
+  display: flex; align-items: center; gap: 5px;
+  height: 32px; padding: 0 12px;
+  background: #2a7d2a; border: none; border-radius: 8px;
+  color: #fff; font-size: 11px; font-weight: 800;
+  cursor: pointer; font-family: 'Comfortaa', sans-serif;
+  letter-spacing: 0.04em; transition: all 0.15s;
+}
+.upload-btn:active { transform: scale(0.93); background: #1f611f; }
 
 /* Screens: remove top padding (no per-screen header) */
 .screen { padding-top: 0; }
@@ -948,20 +1013,27 @@ select.form-input {
         <div class="total-card">
           <div class="total-label">Total Spent</div>
           <div class="total-amount" id="totalAmount">₹0.00</div>
-          <div class="total-period" id="totalPeriod">Past 7 days</div>
+          <div class="total-period" id="totalPeriod">All records</div>
 
-          <div class="filter-tabs">
-            <button class="filter-tab" onclick="setFilter('week',this)">Week</button>
-            <button class="filter-tab active" onclick="setFilter('month',this)">Month</button>
-            <button class="filter-tab" onclick="setFilter('year',this)">Year</button>
-            <button class="filter-tab" onclick="setFilter('all',this)">All Time</button>
+          <div class="date-range-wrap">
+            <div class="date-pill">
+              <label>Start:</label>
+              <input type="date" id="homeStartDate" onchange="onDateRangeInputChange('home')">
+            </div>
+            <div class="date-pill">
+              <label>End:</label>
+              <input type="date" id="homeEndDate" onchange="onDateRangeInputChange('home')">
+            </div>
           </div>
 
           <div class="cat-dropdown-wrap" id="catDropdownWrap">
-            <button class="cat-trigger-pill" id="catTriggerPill" onclick="toggleCatDropdown()">
-              <span id="catPillLabel">🏷️ Categories</span>
-              <span class="cat-chevron">▾</span>
-            </button>
+            <div class="cat-filter-row">
+              <button class="clear-date-btn" onclick="clearDateRange()">Clear Date</button>
+              <button class="cat-trigger-pill" id="catTriggerPill" onclick="toggleCatDropdown()">
+                <span id="catPillLabel">🏷️ Categories</span>
+                <span class="cat-chevron">▾</span>
+              </button>
+            </div>
             <div class="cat-dropdown" id="catDropdown"></div>
           </div>
         </div>
@@ -1011,7 +1083,10 @@ select.form-input {
         <span class="screen-subbar-title">📊 Analytics</span>
         <div class="analytics-actions">
           <button class="share-btn" title="Share CSV">
-            V 2.5.7
+            V 2.6.3
+          </button>
+          <button class="upload-btn" onclick="openUploadCSV()" title="Upload CSV">
+            Upload
           </button>
           <!-- [B] XPort button — Analytics tab only -->
 
@@ -1020,11 +1095,15 @@ select.form-input {
           </button>
         </div>
       </div>
-      <div class="overview-filter-tabs">
-        <button class="overview-filter-tab" onclick="setOverviewFilter('week',this)">Week</button>
-        <button class="overview-filter-tab active" onclick="setOverviewFilter('month',this)">Month</button>
-        <button class="overview-filter-tab" onclick="setOverviewFilter('year',this)">Year</button>
-        <button class="overview-filter-tab" onclick="setOverviewFilter('all',this)">All Time</button>
+      <div class="date-range-wrap">
+        <div class="date-pill">
+          <label>Start:</label>
+          <input type="date" id="analyticsStartDate" onchange="onDateRangeInputChange('analytics')">
+        </div>
+        <div class="date-pill">
+          <label>End:</label>
+          <input type="date" id="analyticsEndDate" onchange="onDateRangeInputChange('analytics')">
+        </div>
       </div>
       <div class="overview-card">
         <div class="overview-card-title">By Category</div>
@@ -1267,6 +1346,7 @@ select.form-input {
   </div>
 
   <div class="toast" id="toast"></div>
+  <input type="file" id="csvUploadInput" accept=".csv,text/csv" style="display:none" onchange="handleCSVUpload(event)">
 </div><!-- /phone -->
 
 <script>
@@ -1290,7 +1370,8 @@ let S = {
   expenses: [],
   accounts: [],
   categories: [],
-  filter: 'month',
+  rangeStart: '',
+  rangeEnd: '',
   catFilter: 'all',
   editExpId: null,
   editAccId: null,
@@ -1357,17 +1438,14 @@ function goToAnalytics() {
 // ══════════════════════════════════════════
 function filtered() {
   const q = (document.getElementById('searchInput')?.value || '').toLowerCase();
-  const now = new Date();
+  const hasFullRange = !!(S.rangeStart && S.rangeEnd);
+  const rangeStartDate = hasFullRange ? new Date(S.rangeStart + 'T00:00:00') : null;
+  const rangeEndDate = hasFullRange ? new Date(S.rangeEnd + 'T23:59:59') : null;
   return S.expenses
     .filter(e => {
-      const d = new Date(e.date + 'T00:00:00');
-      if (S.filter === 'week') {
-        const w = new Date(now); w.setDate(now.getDate() - 7);
-        if (d < w) return false;
-      } else if (S.filter === 'month') {
-        if (d.getMonth() !== now.getMonth() || d.getFullYear() !== now.getFullYear()) return false;
-      } else if (S.filter === 'year') {
-        if (d.getFullYear() !== now.getFullYear()) return false;
+      if (hasFullRange) {
+        const when = new Date(e.date + 'T12:00:00');
+        if (when < rangeStartDate || when > rangeEndDate) return false;
       }
       if (S.catFilter !== 'all' && e.categoryId !== S.catFilter) return false;
       if (!q) return true;
@@ -1380,11 +1458,71 @@ function filtered() {
     .sort((a, b) => new Date(b.date+'T'+b.time) - new Date(a.date+'T'+a.time));
 }
 
-function setFilter(f, btn) {
-  S.filter = f;
-  document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
-  btn.classList.add('active');
+function syncDateInputs() {
+  const homeStart = document.getElementById('homeStartDate');
+  const homeEnd = document.getElementById('homeEndDate');
+  const analyticsStart = document.getElementById('analyticsStartDate');
+  const analyticsEnd = document.getElementById('analyticsEndDate');
+  if (homeStart) homeStart.value = S.rangeStart || '';
+  if (homeEnd) homeEnd.value = S.rangeEnd || '';
+  if (analyticsStart) analyticsStart.value = S.rangeStart || '';
+  if (analyticsEnd) analyticsEnd.value = S.rangeEnd || '';
+  updateDatePlaceholders();
+}
+
+function updateDatePlaceholders() {
+  const ids = ['homeStartDate', 'homeEndDate', 'analyticsStartDate', 'analyticsEndDate'];
+  ids.forEach((id) => {
+    const input = document.getElementById(id);
+    if (input) {
+      input.placeholder = input.value ? formatDisplayDate(input.value) : 'DD/MM/YY';
+      input.title = input.placeholder;
+    }
+  });
+}
+
+function onDateRangeInputChange(source) {
+  const homeStart = document.getElementById('homeStartDate')?.value || '';
+  const homeEnd = document.getElementById('homeEndDate')?.value || '';
+  const analyticsStart = document.getElementById('analyticsStartDate')?.value || '';
+  const analyticsEnd = document.getElementById('analyticsEndDate')?.value || '';
+  const start = source === 'analytics' ? analyticsStart : homeStart;
+  const end = source === 'analytics' ? analyticsEnd : homeEnd;
+  S.rangeStart = start;
+  S.rangeEnd = end;
+  if (S.rangeStart && S.rangeEnd && S.rangeStart > S.rangeEnd) {
+    const swap = S.rangeStart;
+    S.rangeStart = S.rangeEnd;
+    S.rangeEnd = swap;
+  }
+  syncDateInputs();
   renderHome();
+  renderOverview();
+}
+
+function clearDateRange() {
+  S.rangeStart = '';
+  S.rangeEnd = '';
+  syncDateInputs();
+  renderHome();
+  renderOverview();
+}
+
+function formatDisplayDate(dateStr) {
+  if (!dateStr) return 'DD/MM/YY';
+  const [y, m, d] = dateStr.split('-');
+  return `${d}/${m}/${String(y).slice(-2)}`;
+}
+
+function formatTime12(timeStr) {
+  if (!timeStr) return '12:00 AM';
+  const [hRaw, mRaw] = String(timeStr).split(':');
+  const h = parseInt(hRaw, 10);
+  const m = parseInt(mRaw || '0', 10);
+  if (Number.isNaN(h) || Number.isNaN(m)) return timeStr;
+  const suffix = h >= 12 ? 'PM' : 'AM';
+  const hour12 = h % 12 || 12;
+  return `${String(hour12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${suffix}`;
 }
 
 // [F] Category pill filter
@@ -1491,10 +1629,12 @@ function renderHome() {
 
   const list = filtered();
   const total = list.reduce((s, e) => s + parseFloat(e.amount || 0), 0);
-  const labels = { week:'Past 7 days', month:'This month', year:'This year', all:'All time' };
+  const periodLabel = (S.rangeStart && S.rangeEnd)
+    ? `${formatDisplayDate(S.rangeStart)} - ${formatDisplayDate(S.rangeEnd)}`
+    : 'All records';
 
   animateCounter(total);
-  document.getElementById('totalPeriod').textContent = labels[S.filter];
+  document.getElementById('totalPeriod').textContent = periodLabel;
   const hs = document.getElementById('homeSubtitle');
   if (hs) hs.textContent = list.length + ' expense' + (list.length!==1?'s':'');
 
@@ -1734,7 +1874,7 @@ function renderExpenseItems() {
         <div class="expense-cat-dot" style="background:${clr}22"><span>${emoji}</span></div>
         <div class="expense-info">
           <div class="expense-note">${escH(e.note || cat?.name || 'Expense')}</div>
-          <div class="expense-meta">${escH(cat?.name||'—')} · ${escH(acc?.name||'—')} · ${e.time}</div>
+          <div class="expense-meta">${escH(cat?.name||'—')} · ${escH(acc?.name||'—')} · ${formatTime12(e.time)}</div>
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;flex-shrink:0;">
           <div class="expense-amount">₹${fmt(e.amount)}</div>
@@ -1905,37 +2045,23 @@ function pickColor(c, type, containerId) {
 // ══════════════════════════════════════════
 //  PIE CHART (OVERVIEW)
 // ══════════════════════════════════════════
-let overviewFilter = 'month';
 let _pieSlices = []; // [C] store slices for canvas hit-test
 
-function setOverviewFilter(f, btn) {
-  overviewFilter = f;
-  document.querySelectorAll('.overview-filter-tab').forEach(t => t.classList.remove('active'));
-  btn.classList.add('active');
-  renderOverview();
-}
-
 function filteredForOverview() {
-  const now = new Date();
+  const hasFullRange = !!(S.rangeStart && S.rangeEnd);
+  const rangeStartDate = hasFullRange ? new Date(S.rangeStart + 'T00:00:00') : null;
+  const rangeEndDate = hasFullRange ? new Date(S.rangeEnd + 'T23:59:59') : null;
   return S.expenses.filter(e => {
-    if (overviewFilter === 'all') return true;
-    const d = new Date(e.date + 'T00:00:00');
-    if (overviewFilter === 'week') { const w = new Date(now); w.setDate(now.getDate()-6); w.setHours(0,0,0,0); return d >= w; }
-    if (overviewFilter === 'month') return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear();
-    if (overviewFilter === 'year') return d.getFullYear()===now.getFullYear();
+    if (!hasFullRange) return true;
+    const when = new Date(e.date + 'T12:00:00');
+    if (when < rangeStartDate || when > rangeEndDate) return false;
     return true;
   });
 }
 
 // [C] Navigate from Analytics to Home filtered by category + matching period
 function goToCatFromAnalytics(catId) {
-  S.filter    = overviewFilter;
   S.catFilter = catId;
-  // Sync home filter tab active state
-  document.querySelectorAll('.filter-tab').forEach(btn => {
-    const map = { Week:'week', Month:'month', Year:'year', 'All Time':'all' };
-    btn.classList.toggle('active', map[btn.textContent.trim()] === S.filter);
-  });
   const homeBtn = document.querySelector('button.nav-item');
   switchScreen('home', homeBtn);
 }
@@ -1955,7 +2081,7 @@ function renderOverview() {
 
   ctx.clearRect(0,0,W,H);
 
-  const periodLabels = { week:'7 days', month:'month', year:'year', all:'all time' };
+  const periodLabel = (S.rangeStart && S.rangeEnd) ? 'date range' : 'all time';
 
   if (!grand) {
     ctx.fillStyle='#DADADA';
@@ -2013,7 +2139,7 @@ function renderOverview() {
   ctx.fillText('₹'+fmt(grand), cx, cy-9);
   ctx.font='600 11px Comfortaa,sans-serif';
   ctx.fillStyle='#6B7280';
-  ctx.fillText(periodLabels[overviewFilter], cx, cy+10);
+  ctx.fillText(periodLabel, cx, cy+10);
 
   // [C] Legend — clickable
   document.getElementById('pieLegend').innerHTML = slices.map(s => `
@@ -2057,12 +2183,136 @@ function buildExportData() {
     .forEach(e => {
       const acc = S.accounts.find(a=>a.id===e.accountId);
       const cat = S.categories.find(c=>c.id===e.categoryId);
-      rows.push([e.date, e.time, parseFloat(e.amount).toFixed(2), acc?.name||'', cat?.name||'', (e.note||'').replace(/,/g,';')]);
+      rows.push([e.date, e.time, parseFloat(e.amount).toFixed(2), acc?.name||'', cat?.name||'', e.note||'']);
     });
-  const csv = rows.map(r=>r.join(',')).join('\n');
+  const escapeCell = (val) => {
+    const text = String(val ?? '');
+    if (/[",\r\n]/.test(text)) return `"${text.replace(/"/g, '""')}"`;
+    return text;
+  };
+  const csv = rows.map(r => r.map(escapeCell).join(',')).join('\r\n');
   const blob = new Blob(['\uFEFF'+csv], { type:'text/csv;charset=utf-8;' });
   const filename = 'spendlite_' + new Date().toISOString().split('T')[0] + '.csv';
   return { blob, filename };
+}
+
+function openUploadCSV() {
+  const el = document.getElementById('csvUploadInput');
+  if (!el) return;
+  el.value = '';
+  el.click();
+}
+
+function parseCSV(text) {
+  const rows = [];
+  let row = [];
+  let cell = '';
+  let i = 0;
+  let inQuotes = false;
+  while (i < text.length) {
+    const ch = text[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (text[i + 1] === '"') { cell += '"'; i += 2; continue; }
+        inQuotes = false;
+      } else {
+        cell += ch;
+      }
+      i += 1;
+      continue;
+    }
+    if (ch === '"') { inQuotes = true; i += 1; continue; }
+    if (ch === ',') { row.push(cell); cell = ''; i += 1; continue; }
+    if (ch === '\r') { i += 1; continue; }
+    if (ch === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; i += 1; continue; }
+    cell += ch;
+    i += 1;
+  }
+  row.push(cell);
+  if (row.some(v => v !== '')) rows.push(row);
+  return rows;
+}
+
+function ensureAccountByName(name) {
+  const wanted = String(name || '').trim();
+  if (!wanted) return '';
+  let found = S.accounts.find(a => a.name.toLowerCase() === wanted.toLowerCase());
+  if (!found) {
+    found = { id: uid(), name: wanted, color: PALETTE[Math.floor(Math.random() * PALETTE.length)] };
+    S.accounts.push(found);
+  }
+  return found.id;
+}
+
+function ensureCategoryByName(name) {
+  const wanted = String(name || '').trim();
+  if (!wanted) return '';
+  let found = S.categories.find(c => c.name.toLowerCase() === wanted.toLowerCase());
+  if (!found) {
+    found = { id: uid(), name: wanted, color: PALETTE[Math.floor(Math.random() * PALETTE.length)] };
+    S.categories.push(found);
+  }
+  return found.id;
+}
+
+async function handleCSVUpload(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  try {
+    const raw = await file.text();
+    const text = raw.charCodeAt(0) === 0xFEFF ? raw.slice(1) : raw;
+    const rows = parseCSV(text);
+    if (rows.length < 2) { toast('CSV has no data'); return; }
+
+    const header = rows[0].map(h => String(h || '').trim().toLowerCase());
+    const idx = {
+      date: header.findIndex(h => h === 'date'),
+      time: header.findIndex(h => h === 'time'),
+      amount: header.findIndex(h => h.startsWith('amount')),
+      account: header.findIndex(h => h === 'account'),
+      category: header.findIndex(h => h === 'category'),
+      note: header.findIndex(h => h === 'note')
+    };
+    if (idx.date < 0 || idx.amount < 0) {
+      toast('CSV format invalid (needs Date & Amount)');
+      return;
+    }
+
+    let imported = 0;
+    rows.slice(1).forEach((r) => {
+      const date = (r[idx.date] || '').trim();
+      const amountText = (r[idx.amount] || '').trim();
+      const amount = parseFloat(amountText);
+      if (!date || Number.isNaN(amount) || amount <= 0) return;
+      const time = (idx.time >= 0 ? (r[idx.time] || '').trim() : '') || '00:00';
+      const accountName = idx.account >= 0 ? (r[idx.account] || '').trim() : 'Imported';
+      const categoryName = idx.category >= 0 ? (r[idx.category] || '').trim() : 'Imported';
+      const note = idx.note >= 0 ? (r[idx.note] || '').trim() : '';
+      const accountId = ensureAccountByName(accountName || 'Imported');
+      const categoryId = ensureCategoryByName(categoryName || 'Imported');
+      S.expenses.push({
+        id: uid(),
+        amount: amount.toFixed(2),
+        date,
+        time,
+        accountId,
+        categoryId,
+        note
+      });
+      imported += 1;
+    });
+
+    save();
+    renderAccounts();
+    renderCategories();
+    renderHome();
+    renderOverview();
+    toast(imported ? `${imported} expenses imported ✓` : 'No valid rows to import');
+  } catch {
+    toast('Unable to read CSV');
+  } finally {
+    event.target.value = '';
+  }
 }
 
 function downloadCSVBlob(blob, filename) {
@@ -2189,7 +2439,7 @@ function toast(msg) {
 function tick() {
   const n = new Date();
   document.getElementById('statusTime').textContent =
-    n.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:false});
+    n.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});
 }
 
 // ══════════════════════════════════════════
@@ -2301,11 +2551,8 @@ function renderCalDetail() {
 //  CALENDAR → HOME NAVIGATION  [A]
 // ══════════════════════════════════════════
 function navigateToExpense(id) {
-  S.filter = 'all';
+  clearDateRange();
   S.catFilter = 'all';
-  document.querySelectorAll('.filter-tab').forEach(t => {
-    t.classList.toggle('active', t.textContent.trim() === 'All Time');
-  });
   switchScreen('home', document.querySelector('.nav-item'));
   // Scroll + highlight after animation completes (320ms)
   setTimeout(() => {
@@ -2328,7 +2575,7 @@ function navigateToExpense(id) {
 // ══════════════════════════════════════════
 //  INIT
 // ══════════════════════════════════════════
-load(); renderOverview(); renderHeaderDate(); updateGHLabel('Analytics');
+load(); renderOverview(); renderHeaderDate(); updateGHLabel('Analytics'); syncDateInputs(); tick(); setInterval(tick, 15000);
 </script>
 </body>
 </html>
