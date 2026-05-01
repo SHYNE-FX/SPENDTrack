@@ -6,7 +6,7 @@
 <title>SPENDTrak </title>
 <link rel="icon" href="logoRUPEES.png" type="image/png">
 
-<!-- VERSION 2.6.3 -->
+<!-- V 2.6.4 -->
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -602,15 +602,17 @@ select.form-input {
 }
 .clear-date-btn {
   height: 32px;
-  padding: 0 12px;
+  min-width: 40px;
+  padding: 0 10px;
   border-radius: 16px;
   border: 1.5px solid var(--border);
   background: var(--white);
   color: var(--text-secondary);
   cursor: pointer;
   font-family: 'Comfortaa', sans-serif;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1;
   transition: all 0.15s;
 }
 .clear-date-btn:active {
@@ -806,6 +808,11 @@ select.form-input {
   letter-spacing: 0.04em; transition: all 0.15s;
 }
 .share-btn:active { transform: scale(0.93); background: #002244; }
+.share-btn.icon-btn {
+  font-size: 20px;
+  line-height: 1;
+  padding: 0 10px;
+}
 .upload-btn {
   display: flex; align-items: center; gap: 5px;
   height: 32px; padding: 0 12px;
@@ -1028,7 +1035,7 @@ select.form-input {
 
           <div class="cat-dropdown-wrap" id="catDropdownWrap">
             <div class="cat-filter-row">
-              <button class="clear-date-btn" onclick="clearDateRange()">⟳</button>
+              <button class="clear-date-btn" onclick="clearDateRange()" title="Reset to current month">⟳</button>
               <button class="cat-trigger-pill" id="catTriggerPill" onclick="toggleCatDropdown()">
                 <span id="catPillLabel">🏷️ Categories</span>
                 <span class="cat-chevron">▾</span>
@@ -1082,8 +1089,9 @@ select.form-input {
       <div class="screen-subbar">
         <span class="screen-subbar-title">📊 Analytics</span>
         <div class="analytics-actions">
+          <button class="share-btn icon-btn" onclick="clearDateRange()" title="Reset to current month">⟳</button>
           <button class="share-btn" title="Share CSV">
-            V 2.6.3
+            V 2.6.6
           </button>
           <button class="upload-btn" onclick="openUploadCSV()" title="Upload CSV">
             Upload
@@ -1501,8 +1509,7 @@ function onDateRangeInputChange(source) {
 }
 
 function clearDateRange() {
-  S.rangeStart = '';
-  S.rangeEnd = '';
+  setCurrentMonthRange();
   syncDateInputs();
   renderHome();
   renderOverview();
@@ -1523,6 +1530,16 @@ function formatTime12(timeStr) {
   const suffix = h >= 12 ? 'PM' : 'AM';
   const hour12 = h % 12 || 12;
   return `${String(hour12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${suffix}`;
+}
+
+function setCurrentMonthRange() {
+  const now = new Date();
+  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  const toIso = (d) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  S.rangeStart = toIso(firstDay);
+  S.rangeEnd = toIso(lastDay);
 }
 
 // [F] Category pill filter
@@ -1631,7 +1648,7 @@ function renderHome() {
   const total = list.reduce((s, e) => s + parseFloat(e.amount || 0), 0);
   const periodLabel = (S.rangeStart && S.rangeEnd)
     ? `${formatDisplayDate(S.rangeStart)} - ${formatDisplayDate(S.rangeEnd)}`
-    : 'All records';
+    : 'Current month';
 
   animateCounter(total);
   document.getElementById('totalPeriod').textContent = periodLabel;
@@ -2551,7 +2568,9 @@ function renderCalDetail() {
 //  CALENDAR → HOME NAVIGATION  [A]
 // ══════════════════════════════════════════
 function navigateToExpense(id) {
-  clearDateRange();
+  S.rangeStart = '';
+  S.rangeEnd = '';
+  syncDateInputs();
   S.catFilter = 'all';
   switchScreen('home', document.querySelector('.nav-item'));
   // Scroll + highlight after animation completes (320ms)
@@ -2575,7 +2594,7 @@ function navigateToExpense(id) {
 // ══════════════════════════════════════════
 //  INIT
 // ══════════════════════════════════════════
-load(); renderOverview(); renderHeaderDate(); updateGHLabel('Analytics'); syncDateInputs(); tick(); setInterval(tick, 15000);
+load(); setCurrentMonthRange(); renderOverview(); renderHeaderDate(); updateGHLabel('Analytics'); syncDateInputs(); tick(); setInterval(tick, 15000);
 </script>
 </body>
 </html>
